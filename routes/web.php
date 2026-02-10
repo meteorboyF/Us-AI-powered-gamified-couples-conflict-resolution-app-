@@ -32,5 +32,10 @@ Route::middleware([
     Route::middleware(['ensure.has.couple'])->group(function () {
         Route::get('/missions', Board::class)->name('missions.board');
         Route::get('/chat', \App\Livewire\Chat\Room::class)->name('chat.room');
+
+        // Repair Flow
+        Route::get('/repair/initiate', \App\Livewire\Repair\Initiate::class)->name('repair.initiate');
+        Route::get('/repair/wizard/{sessionId}', \App\Livewire\Repair\Wizard::class)->name('repair.wizard');
+        Route::get('/repair/history', \App\Livewire\Repair\History::class)->name('repair.history');
     });
 });
