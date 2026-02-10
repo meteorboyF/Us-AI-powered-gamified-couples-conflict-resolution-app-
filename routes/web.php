@@ -31,5 +31,6 @@ Route::middleware([
     // Missions (requires couple)
     Route::middleware(['ensure.has.couple'])->group(function () {
         Route::get('/missions', Board::class)->name('missions.board');
+        Route::get('/chat', \App\Livewire\Chat\Room::class)->name('chat.room');
     });
 });

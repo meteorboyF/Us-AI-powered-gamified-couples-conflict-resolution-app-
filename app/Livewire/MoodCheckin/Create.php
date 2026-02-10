@@ -89,6 +89,17 @@ class Create extends Component
             ['mood_level' => $this->moodLevel]
         );
 
+        // Create mood alert notification if mood is low
+        if ($this->moodLevel <= 2) {
+            $notificationService = app(\App\Services\NotificationService::class);
+            $notificationService->createMoodAlert(
+                $couple,
+                auth()->user(),
+                $this->moodLevel,
+                $this->needs
+            );
+        }
+
         session()->flash('message', 'Check-in complete! +10 XP');
         return redirect()->route('dashboard');
     }

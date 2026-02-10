@@ -69,12 +69,12 @@
                     </a>
 
                     <!-- Chat -->
-                    <a href="/chat" class="group">
+                    <a href="{{ route('chat.room') }}" class="group">
                         <div class="bg-white/80 backdrop-blur-lg rounded-2xl p-6 shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border border-white/20">
                             <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">💬</div>
                             <h3 class="text-xl font-bold text-gray-800 mb-2">Chat</h3>
                             <p class="text-gray-600 text-sm">Talk with your partner</p>
-                            <div class="mt-4 text-blue-600 font-semibold">Coming Soon</div>
+                            <div class="mt-4 text-blue-600 font-semibold">+5 XP</div>
                         </div>
                     </a>
                 </div>
