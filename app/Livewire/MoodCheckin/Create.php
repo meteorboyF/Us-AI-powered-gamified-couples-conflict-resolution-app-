@@ -45,7 +45,7 @@ class Create extends Component
         if ($couple) {
             $existing = MoodCheckin::where('couple_id', $couple->id)
                 ->where('user_id', auth()->id())
-                ->whereDate('date', today())
+                ->where('date', today()->toDateString())
                 ->first();
 
             if ($existing) {
