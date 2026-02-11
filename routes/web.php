@@ -42,5 +42,8 @@ Route::middleware([
         Route::get('/vault', \App\Livewire\Vault\Gallery::class)->name('vault.gallery');
         Route::get('/vault/upload', \App\Livewire\Vault\Upload::class)->name('vault.upload');
         Route::get('/vault/memory/{memoryId}', \App\Livewire\Vault\MemoryView::class)->name('vault.memory');
+
+        // AI Coach
+        Route::get('/coach', \App\Livewire\Coach\Chat::class)->name('coach.chat');
     });
 });
