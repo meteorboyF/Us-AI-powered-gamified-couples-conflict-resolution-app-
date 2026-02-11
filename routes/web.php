@@ -37,5 +37,10 @@ Route::middleware([
         Route::get('/repair/initiate', \App\Livewire\Repair\Initiate::class)->name('repair.initiate');
         Route::get('/repair/wizard/{sessionId}', \App\Livewire\Repair\Wizard::class)->name('repair.wizard');
         Route::get('/repair/history', \App\Livewire\Repair\History::class)->name('repair.history');
+
+        // Vault
+        Route::get('/vault', \App\Livewire\Vault\Gallery::class)->name('vault.gallery');
+        Route::get('/vault/upload', \App\Livewire\Vault\Upload::class)->name('vault.upload');
+        Route::get('/vault/memory/{memoryId}', \App\Livewire\Vault\MemoryView::class)->name('vault.memory');
     });
 });
