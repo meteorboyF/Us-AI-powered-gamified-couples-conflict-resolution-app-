@@ -5,50 +5,69 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class OpenAiService
+class GeminiService
 {
     protected $apiKey;
-    protected $baseUrl = 'https://api.openai.com/v1/chat/completions';
-    protected $model = 'gpt-4o-mini';
+    protected $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     public function __construct()
     {
-        $this->apiKey = config('services.openai.key');
+        $this->apiKey = config('services.gemini.key');
     }
 
     /**
-     * Send a request to the OpenAI API.
+     * Send a request to the Gemini API.
      */
     public function chat(array $messages, string $mode = 'vent'): string
     {
         // Add system instruction based on mode
-        $systemMessage = [
-            'role' => 'system',
-            'content' => $this->getSystemPrompt($mode),
+        $systemInstruction = $this->getSystemPrompt($mode);
+
+        // Transform messages for Gemini format
+        $contents = [];
+
+        // Add system prompt as the first user message (Gemini best practice for simple chat)
+        // or use the system_instruction field if supported by the library.
+        // For REST API, we'll prepend it to the context.
+        $contents[] = [
+            'role' => 'user',
+            'parts' => [['text' => "System Instruction: " . $systemInstruction]]
         ];
 
-        // Prepend system message
-        array_unshift($messages, $systemMessage);
+        $contents[] = [
+            'role' => 'model',
+            'parts' => [['text' => "Understood. I will act as the localized relationship coach based on these instructions."]]
+        ];
+
+        foreach ($messages as $msg) {
+            $role = $msg['role'] === 'user' ? 'user' : 'model';
+            $contents[] = [
+                'role' => $role,
+                'parts' => [['text' => $msg['content']]]
+            ];
+        }
 
         if (empty($this->apiKey)) {
-            return $this->mockResponse($mode, end($messages)['content']);
+            return $this->mockResponse($mode);
         }
 
         try {
-            $response = Http::withToken($this->apiKey)->post($this->baseUrl, [
-                'model' => $this->model,
-                'messages' => $messages,
-                'temperature' => 0.7,
+            $response = Http::post($this->baseUrl . '?key=' . $this->apiKey, [
+                'contents' => $contents,
+                'generationConfig' => [
+                    'temperature' => 0.7,
+                    'maxOutputTokens' => 500,
+                ]
             ]);
 
             if ($response->successful()) {
-                return $response->json('choices.0.message.content');
+                return $response->json('candidates.0.content.parts.0.text') ?? "I'm deep in thought but couldn't formulate a response.";
             } else {
-                Log::error('OpenAI API Error: ' . $response->body());
+                Log::error('Gemini API Error: ' . $response->body());
                 return "I'm having trouble connecting to my brain right now. Please try again later. (Error: " . $response->status() . ")";
             }
         } catch (\Exception $e) {
-            Log::error('OpenAI Connection Exception: ' . $e->getMessage());
+            Log::error('Gemini Connection Exception: ' . $e->getMessage());
             return "Connection error. Please check your internet connection and try again.";
         }
     }
@@ -71,7 +90,7 @@ class OpenAiService
         // Bridge mode = helping reformulate
         return "You are a communication expert specializing in conflict resolution. 
         Your goal is to help the user translate their complaints or frustrations into constructive 'I' statements. 
-        Guide them to express: 'I feel [emotion] when [situation] because [impact/need], and I would appreciate [request]'. 
+        Guide them to express: 'I feel [emotion] when [situation] because [impact/need], and I would really appreciate [request]'. 
         Remove blame, criticism, and 'you' statements. 
         If the user is very angry, first help them calm down before suggesting phrasing.
         Keep responses concise and actionable.";
@@ -80,10 +99,10 @@ class OpenAiService
     /**
      * Mock response for testing without API key.
      */
-    protected function mockResponse(string $mode, string $lastUserMessage): string
+    protected function mockResponse(string $mode): string
     {
         if ($mode === 'vent') {
-            return "I hear you. It sounds really tough to deal with that. (This is a MOCK response because no API key was found. Please add OPENAI_API_KEY to .env)";
+            return "I hear you. It sounds really tough to deal with that. (This is a MOCK response because no API key was found. Please add GEMINI_API_KEY to .env)";
         }
         return "Try saying: 'I feel overwhelmed when tasks stack up...' (This is a MOCK response because no API key was found).";
     }

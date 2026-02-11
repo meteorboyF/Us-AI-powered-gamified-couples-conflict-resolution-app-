@@ -4,7 +4,7 @@ namespace App\Livewire\Coach;
 
 use App\Models\AiChat;
 use App\Models\Couple;
-use App\Services\OpenAiService;
+use App\Services\GeminiService;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 
@@ -47,7 +47,7 @@ class Chat extends Component
             : "Let's turn that frustration into a constructive message. What do you want to tell your partner?";
     }
 
-    public function sendMessage(OpenAiService $aiService)
+    public function sendMessage(GeminiService $aiService)
     {
         if (trim($this->newMessage) === '') {
             return;
@@ -63,7 +63,7 @@ class Chat extends Component
         $this->isTyping = true;
     }
 
-    public function generateResponse(OpenAiService $aiService)
+    public function generateResponse(GeminiService $aiService)
     {
         // Retrieve fresh from DB to ensure context
         $history = $this->chat->refresh()->messages ?? [];
