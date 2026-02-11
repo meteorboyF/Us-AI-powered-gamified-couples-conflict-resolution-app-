@@ -33,13 +33,15 @@
                         </div>
                     </div>
                 @empty
-                    <div class="text-center py-16">
-                        <div class="text-8xl mb-6">🌱</div>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-4">No Repairs Yet</h2>
-                        <p class="text-gray-600 mb-8">Start your first repair session to begin growing together</p>
+                    <div class="text-center py-20">
+                        <div class="text-8xl mb-6 opacity-80">🌱</div>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-4">No Repairs Yet</h2>
+                        <p class="text-gray-600 mb-8 max-w-md mx-auto">
+                            Conflict is natural. When you're ready to turn a disagreement into growth, we're here to guide you.
+                        </p>
                         <a href="/repair/initiate"
                             class="inline-block px-8 py-4 bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
-                            Start First Repair
+                            Start First Session
                         </a>
                     </div>
                 @endforelse
