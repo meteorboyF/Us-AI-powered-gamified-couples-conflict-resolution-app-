@@ -54,6 +54,11 @@ class Couple extends Model
         return $this->hasMany(GiftSuggestion::class);
     }
 
+    public function coupleDates()
+    {
+        return $this->hasMany(CoupleDate::class);
+    }
+
     // Helper methods
     public function generateInviteCode(): string
     {

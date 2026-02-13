@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Couple;
 use App\Models\Notification;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 class NotificationService
@@ -32,6 +33,31 @@ class NotificationService
             'message' => $message,
             'data' => $data,
         ]);
+    }
+
+    public function createReminderIfNotExists(
+        User $user,
+        Couple $couple,
+        string $type,
+        string $title,
+        string $message,
+        array $data = [],
+        ?CarbonInterface $date = null
+    ): ?Notification {
+        $date = $date ?? now();
+
+        $alreadyExists = Notification::query()
+            ->where('user_id', $user->id)
+            ->where('couple_id', $couple->id)
+            ->where('type', $type)
+            ->whereDate('created_at', $date->toDateString())
+            ->exists();
+
+        if ($alreadyExists) {
+            return null;
+        }
+
+        return $this->createNotification($user, $couple, $type, $title, $message, $data);
     }
 
     /**

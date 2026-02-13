@@ -32,6 +32,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'reminder_daily_checkin_enabled',
+        'reminder_mission_enabled',
+        'reminder_anniversary_enabled',
     ];
 
     /**
@@ -65,6 +68,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'reminder_daily_checkin_enabled' => 'boolean',
+            'reminder_mission_enabled' => 'boolean',
+            'reminder_anniversary_enabled' => 'boolean',
         ];
     }
 
