@@ -69,4 +69,24 @@ class ChatFlowTest extends TestCase
         $this->expectException(AuthorizationException::class);
         $vaultService->addReaction($memory, $outsider, 'heart');
     }
+
+    public function test_message_order_is_stable_across_repeated_fetches(): void
+    {
+        $sender = User::factory()->create();
+        $partner = User::factory()->create();
+        $coupleService = app(CoupleService::class);
+        $couple = $coupleService->createCouple($sender);
+        $coupleService->joinCouple($partner, $couple->invite_code);
+
+        $chatService = app(ChatService::class);
+        $chatService->sendMessage($couple, $sender, 'msg-1');
+        $chatService->sendMessage($couple, $partner, 'msg-2');
+        $chatService->sendMessage($couple, $sender, 'msg-3');
+
+        $firstReadIds = $chatService->getMessages($couple, $sender)->pluck('id')->values()->all();
+        $secondReadIds = $chatService->getMessages($couple, $sender)->pluck('id')->values()->all();
+
+        $this->assertSame($firstReadIds, $secondReadIds);
+        $this->assertSame(['msg-1', 'msg-2', 'msg-3'], $chatService->getMessages($couple, $sender)->pluck('content')->all());
+    }
 }

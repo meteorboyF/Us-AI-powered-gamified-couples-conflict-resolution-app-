@@ -103,7 +103,7 @@
                         @php
                             $isDualLocked = $memory->isDual() && !$memory->hasActiveDualUnlock();
                         @endphp
-                        <div
+                        <div wire:key="memory-card-{{ $memory->id }}"
                             class="group relative bg-white/90 backdrop-blur-lg rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden border border-white/20">
                             <a href="/vault/memory/{{ $memory->id }}" class="block">
                                 @if($memory->isPhoto())

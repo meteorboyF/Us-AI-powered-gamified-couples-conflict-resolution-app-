@@ -139,6 +139,7 @@ class ChatService
         return Message::forCouple($couple)
             ->with('user')
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
             ->limit($limit)
             ->get()
             ->reverse()

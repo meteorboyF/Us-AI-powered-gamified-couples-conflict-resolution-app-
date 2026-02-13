@@ -13,7 +13,8 @@
             <!-- Missions Grid -->
             <div class="max-w-4xl mx-auto space-y-6">
                 @foreach($missions as $assignment)
-                    <div class="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-8 border border-white/20 hover:shadow-2xl transition-all duration-300">
+                    <div wire:key="mission-assignment-{{ $assignment->id }}"
+                        class="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl p-8 border border-white/20 hover:shadow-2xl transition-all duration-300">
                         <div class="flex items-start justify-between gap-6">
                             <!-- Mission Icon & Info -->
                             <div class="flex-1">
