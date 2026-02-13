@@ -24,7 +24,8 @@
             <div class="flex-1 overflow-y-auto p-6 space-y-4" id="messages-container"
                 style="max-height: calc(100vh - 300px);">
                 @forelse($messages as $message)
-                    <div class="flex {{ $message->user_id === auth()->id() ? 'justify-end' : 'justify-start' }}">
+                    <div wire:key="chat-message-{{ $message->id }}"
+                        class="flex {{ $message->user_id === auth()->id() ? 'justify-end' : 'justify-start' }}">
                         <div class="max-w-xs lg:max-w-md">
                             @if($message->type === 'love_button')
                                 <!-- Love Button Message -->
@@ -120,22 +121,21 @@
             </div>
         </div>
     @endif
+    <script>
+        // Auto-scroll to bottom on new messages
+        window.addEventListener('message-sent', () => {
+            const container = document.getElementById('messages-container');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+
+        // Scroll to bottom on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('messages-container');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        });
+    </script>
 </div>
-
-<script>
-    // Auto-scroll to bottom on new messages
-    window.addEventListener('message-sent', () => {
-        const container = document.getElementById('messages-container');
-        if (container) {
-            container.scrollTop = container.scrollHeight;
-        }
-    });
-
-    // Scroll to bottom on load
-    document.addEventListener('DOMContentLoaded', () => {
-        const container = document.getElementById('messages-container');
-        if (container) {
-            container.scrollTop = container.scrollHeight;
-        }
-    });
-</script>
