@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use App\Models\Couple;
 use App\Models\Message;
 use App\Models\User;
@@ -32,6 +33,8 @@ class ChatService
      */
     public function sendMessage(Couple $couple, User $user, string $content): Message
     {
+        $this->assertCoupleMember($couple, $user);
+
         return DB::transaction(function () use ($couple, $user, $content) {
             $message = Message::create([
                 'couple_id' => $couple->id,
@@ -66,6 +69,8 @@ class ChatService
      */
     public function sendLoveButton(Couple $couple, User $user, string $buttonType): Message
     {
+        $this->assertCoupleMember($couple, $user);
+
         if (!isset(self::LOVE_BUTTONS[$buttonType])) {
             throw new \InvalidArgumentException("Invalid love button type: {$buttonType}");
         }
@@ -127,8 +132,10 @@ class ChatService
     /**
      * Get messages for a couple
      */
-    public function getMessages(Couple $couple, int $limit = 50): Collection
+    public function getMessages(Couple $couple, User $user, int $limit = 50): Collection
     {
+        $this->assertCoupleMember($couple, $user);
+
         return Message::forCouple($couple)
             ->with('user')
             ->orderBy('created_at', 'desc')
@@ -143,6 +150,8 @@ class ChatService
      */
     public function markMessagesAsRead(Couple $couple, User $user): int
     {
+        $this->assertCoupleMember($couple, $user);
+
         return Message::forCouple($couple)
             ->forUser($user)
             ->unread()
@@ -199,5 +208,21 @@ class ChatService
     public static function getLoveButtons(): array
     {
         return self::LOVE_BUTTONS;
+    }
+
+    protected function assertCoupleMember(Couple $couple, User $user): void
+    {
+        if (!$couple->isActive()) {
+            throw new AuthorizationException('Unauthorized couple access.');
+        }
+
+        $isMember = $couple->users()
+            ->where('users.id', $user->id)
+            ->where('couple_user.is_active', true)
+            ->exists();
+
+        if (!$isMember) {
+            throw new AuthorizationException('Unauthorized couple access.');
+        }
     }
 }

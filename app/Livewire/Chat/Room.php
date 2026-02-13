@@ -38,7 +38,7 @@ class Room extends Component
         }
 
         $chatService = app(ChatService::class);
-        $this->messages = $chatService->getMessages($this->couple);
+        $this->messages = $chatService->getMessages($this->couple, auth()->user());
 
         // Mark messages as read
         $chatService->markMessagesAsRead($this->couple, auth()->user());

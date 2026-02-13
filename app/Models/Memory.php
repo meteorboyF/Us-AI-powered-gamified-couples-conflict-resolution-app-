@@ -129,8 +129,15 @@ class Memory extends Model
             return false;
         }
 
-        // Shared and locked memories visible to both partners
-        return $this->couple->users()->where('users.id', $user->id)->exists();
+        if (!$this->couple->isActive()) {
+            return false;
+        }
+
+        // Shared and locked memories visible to active couple members only
+        return $this->couple->users()
+            ->where('users.id', $user->id)
+            ->where('couple_user.is_active', true)
+            ->exists();
     }
 
     /**

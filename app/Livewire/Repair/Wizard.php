@@ -104,6 +104,7 @@ class Wizard extends Component
         try {
             $this->session = $repairService->selectSharedGoals(
                 $this->session,
+                auth()->user(),
                 $this->selectedGoals
             );
 
@@ -158,7 +159,7 @@ class Wizard extends Component
         $repairService = app(RepairService::class);
 
         try {
-            $repairService->completeRepair($this->session);
+            $repairService->completeRepair($this->session, auth()->user());
             session()->flash('message', 'Repair completed! +50 XP');
             return redirect()->route('dashboard');
 

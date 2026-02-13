@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use App\Models\Couple;
 use App\Models\RepairAgreement;
 use App\Models\RepairSession;
@@ -30,6 +31,8 @@ class RepairService
      */
     public function initiateRepair(Couple $couple, User $user, string $topic): RepairSession
     {
+        $this->assertCoupleMember($couple, $user);
+
         // Check for active sessions
         $activeSession = RepairSession::forCouple($couple)
             ->active()
@@ -69,6 +72,8 @@ class RepairService
      */
     public function joinRepair(RepairSession $session, User $user): RepairSession
     {
+        $this->assertCoupleMember($session->couple, $user);
+
         if (!$session->canBeJoined($user)) {
             throw new \Exception('You cannot join this repair session.');
         }
@@ -82,6 +87,8 @@ class RepairService
      */
     public function updatePerspective(RepairSession $session, User $user, string $perspective): RepairSession
     {
+        $this->assertCoupleMember($session->couple, $user);
+
         $field = $session->initiated_by === $user->id ? 'initiator_perspective' : 'partner_perspective';
 
         $session->update([$field => trim($perspective)]);
@@ -92,8 +99,10 @@ class RepairService
     /**
      * Select shared goals
      */
-    public function selectSharedGoals(RepairSession $session, array $goals): RepairSession
+    public function selectSharedGoals(RepairSession $session, User $user, array $goals): RepairSession
     {
+        $this->assertCoupleMember($session->couple, $user);
+
         // Validate goals
         foreach ($goals as $goal) {
             if (!isset(self::SHARED_GOALS[$goal])) {
@@ -115,6 +124,8 @@ class RepairService
      */
     public function createAgreement(RepairSession $session, User $user, string $text): RepairAgreement
     {
+        $this->assertCoupleMember($session->couple, $user);
+
         return RepairAgreement::create([
             'repair_session_id' => $session->id,
             'couple_id' => $session->couple_id,
@@ -128,6 +139,8 @@ class RepairService
      */
     public function acknowledgeAgreement(RepairAgreement $agreement, User $user): RepairAgreement
     {
+        $this->assertCoupleMember($agreement->couple, $user);
+
         // Verify user is the partner (not the creator)
         if ($agreement->created_by === $user->id) {
             throw new \Exception('You cannot acknowledge your own agreement.');
@@ -152,8 +165,10 @@ class RepairService
     /**
      * Complete the repair session
      */
-    public function completeRepair(RepairSession $session): RepairSession
+    public function completeRepair(RepairSession $session, User $user): RepairSession
     {
+        $this->assertCoupleMember($session->couple, $user);
+
         // Verify both partners have at least one agreement
         $initiatorAgreements = $session->agreements()
             ->where('created_by', $session->initiated_by)
@@ -224,6 +239,8 @@ class RepairService
      */
     public function abandonRepair(RepairSession $session, User $user): RepairSession
     {
+        $this->assertCoupleMember($session->couple, $user);
+
         $session->abandon();
 
         // Notify partner
@@ -284,5 +301,21 @@ class RepairService
         return RepairSession::forCouple($couple)
             ->completed()
             ->exists();
+    }
+
+    protected function assertCoupleMember(Couple $couple, User $user): void
+    {
+        if (!$couple->isActive()) {
+            throw new AuthorizationException('Unauthorized couple access.');
+        }
+
+        $isMember = $couple->users()
+            ->where('users.id', $user->id)
+            ->where('couple_user.is_active', true)
+            ->exists();
+
+        if (!$isMember) {
+            throw new AuthorizationException('Unauthorized couple access.');
+        }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Auth\Access\AuthorizationException;
 use App\Models\Couple;
 use App\Models\Memory;
 use App\Models\MemoryReaction;
@@ -23,6 +24,7 @@ class VaultService
      */
     public function uploadPhoto(Couple $couple, User $user, UploadedFile $file, array $data): Memory
     {
+        $this->assertCoupleMember($couple, $user);
         $this->validateFileType($file, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
         $this->validateFileSize($file, 5 * 1024); // 5MB in KB
 
@@ -62,6 +64,7 @@ class VaultService
      */
     public function uploadVideo(Couple $couple, User $user, UploadedFile $file, array $data): Memory
     {
+        $this->assertCoupleMember($couple, $user);
         $this->validateFileType($file, ['mp4', 'mov', 'avi', 'webm']);
         $this->validateFileSize($file, 50 * 1024); // 50MB in KB
 
@@ -101,6 +104,7 @@ class VaultService
      */
     public function uploadVoiceNote(Couple $couple, User $user, UploadedFile $file, array $data): Memory
     {
+        $this->assertCoupleMember($couple, $user);
         $this->validateFileType($file, ['mp3', 'wav', 'm4a', 'ogg']);
         $this->validateFileSize($file, 10 * 1024); // 10MB in KB
 
@@ -140,6 +144,8 @@ class VaultService
      */
     public function createTextMemory(Couple $couple, User $user, array $data): Memory
     {
+        $this->assertCoupleMember($couple, $user);
+
         return DB::transaction(function () use ($couple, $user, $data) {
             $memory = Memory::create([
                 'couple_id' => $couple->id,
@@ -168,6 +174,8 @@ class VaultService
      */
     public function updateMemory(Memory $memory, User $user, array $data): Memory
     {
+        $this->assertCoupleMember($memory->couple, $user);
+
         if ($memory->created_by !== $user->id) {
             throw new \Exception('You can only edit your own memories.');
         }
@@ -185,6 +193,8 @@ class VaultService
      */
     public function deleteMemory(Memory $memory, User $user): void
     {
+        $this->assertCoupleMember($memory->couple, $user);
+
         if (!$memory->canBeDeletedBy($user)) {
             throw new \Exception('You cannot delete this memory.');
         }
@@ -207,6 +217,8 @@ class VaultService
      */
     public function lockMemory(Memory $memory, User $user): Memory
     {
+        $this->assertCoupleMember($memory->couple, $user);
+
         if ($memory->created_by !== $user->id) {
             throw new \Exception('Only the creator can lock this memory.');
         }
@@ -232,6 +244,8 @@ class VaultService
      */
     public function unlockMemory(Memory $memory, User $user): Memory
     {
+        $this->assertCoupleMember($memory->couple, $user);
+
         // For now, allow creator to unlock
         // In future, could require both partners to agree
         if ($memory->created_by !== $user->id) {
@@ -247,6 +261,8 @@ class VaultService
      */
     public function changeVisibility(Memory $memory, User $user, string $visibility): Memory
     {
+        $this->assertCoupleMember($memory->couple, $user);
+
         if ($memory->created_by !== $user->id) {
             throw new \Exception('Only the creator can change visibility.');
         }
@@ -268,6 +284,11 @@ class VaultService
      */
     public function addReaction(Memory $memory, User $user, string $reaction): MemoryReaction
     {
+        $this->assertCoupleMember($memory->couple, $user);
+        if (!$memory->canBeViewedBy($user)) {
+            throw new AuthorizationException('You cannot react to this memory.');
+        }
+
         $validReactions = array_keys(MemoryReaction::getReactionTypes());
         if (!in_array($reaction, $validReactions)) {
             throw new \InvalidArgumentException('Invalid reaction type.');
@@ -287,6 +308,11 @@ class VaultService
      */
     public function removeReaction(Memory $memory, User $user): void
     {
+        $this->assertCoupleMember($memory->couple, $user);
+        if (!$memory->canBeViewedBy($user)) {
+            throw new AuthorizationException('You cannot modify reactions for this memory.');
+        }
+
         MemoryReaction::where('memory_id', $memory->id)
             ->where('user_id', $user->id)
             ->delete();
@@ -297,6 +323,8 @@ class VaultService
      */
     public function getMemories(Couple $couple, User $user, ?string $type = null)
     {
+        $this->assertCoupleMember($couple, $user);
+
         $query = Memory::forCouple($couple)
             ->visible($user)
             ->with(['creator', 'reactions'])
@@ -312,8 +340,12 @@ class VaultService
     /**
      * Get locked memories
      */
-    public function getLockedMemories(Couple $couple)
+    public function getLockedMemories(Couple $couple, ?User $user = null)
     {
+        if ($user) {
+            $this->assertCoupleMember($couple, $user);
+        }
+
         return Memory::forCouple($couple)
             ->locked()
             ->with(['creator', 'reactions'])
@@ -324,8 +356,12 @@ class VaultService
     /**
      * Get storage statistics
      */
-    public function getStorageStats(Couple $couple): array
+    public function getStorageStats(Couple $couple, ?User $user = null): array
     {
+        if ($user) {
+            $this->assertCoupleMember($couple, $user);
+        }
+
         $memories = Memory::forCouple($couple)->get();
 
         return [
@@ -408,5 +444,21 @@ class VaultService
         return Memory::forCouple($couple)
             ->ofType($type)
             ->exists();
+    }
+
+    protected function assertCoupleMember(Couple $couple, User $user): void
+    {
+        if (!$couple->isActive()) {
+            throw new AuthorizationException('Unauthorized couple access.');
+        }
+
+        $isMember = $couple->users()
+            ->where('users.id', $user->id)
+            ->where('couple_user.is_active', true)
+            ->exists();
+
+        if (!$isMember) {
+            throw new AuthorizationException('Unauthorized couple access.');
+        }
     }
 }
