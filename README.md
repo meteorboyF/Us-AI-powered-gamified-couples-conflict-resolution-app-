@@ -219,6 +219,34 @@ DB_PASSWORD=
 php artisan migrate:fresh --seed
 ```
 
+## /demo Guide
+
+Use this script for a fast 2-minute walkthrough.
+
+### Setup
+
+```bash
+php artisan migrate:fresh --seed
+php artisan serve
+```
+
+Open: `http://127.0.0.1:8000`
+
+### Demo Login Users
+
+- `demo.alex@example.com` / `password`
+- `demo.sam@example.com` / `password`
+
+### 2-Minute Flow
+
+1. Log in as `demo.alex@example.com`.
+2. Open Dashboard and show world level/XP progression.
+3. Open `Vault` and show sample memories + comfort tag.
+4. Open `AI Coach` and show sanitized sample chat context.
+5. Open `Missions` and complete one mission.
+6. Open `Gifts` and generate suggestions.
+7. Open notifications bell to show in-app reminders and alerts.
+
 ## 📝 Git Setup
 
 See [GIT_SETUP.md](GIT_SETUP.md) for detailed Git configuration instructions.
