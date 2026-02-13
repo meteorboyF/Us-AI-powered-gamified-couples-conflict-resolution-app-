@@ -223,6 +223,7 @@ class Memory extends Model
             return null;
         }
 
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
         $disk = Storage::disk(self::MEDIA_DISK);
 
         if (! $disk->exists($this->file_path)) {
@@ -241,6 +242,7 @@ class Memory extends Model
             return null;
         }
 
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
         $disk = Storage::disk(self::MEDIA_DISK);
 
         if (! $disk->exists($this->thumbnail_path)) {
