@@ -2,22 +2,25 @@
 
 namespace App\Services;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use App\Models\Couple;
 use App\Models\Memory;
 use App\Models\MemoryReaction;
 use App\Models\User;
+use App\Models\VaultUnlock;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class VaultService
 {
+    public const DUAL_UNLOCK_TTL_MINUTES = 30;
+
     public function __construct(
         protected XpService $xpService
-    ) {
-    }
+    ) {}
 
     /**
      * Upload a photo
@@ -27,7 +30,7 @@ class VaultService
         $this->assertCoupleMember($couple, $user);
         $this->validateFileType($file, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
         $this->validateFileSize($file, 5 * 1024); // 5MB in KB
-        $isFirstPhoto = !$this->hasUploadedType($couple, 'photo');
+        $isFirstPhoto = ! $this->hasUploadedType($couple, 'photo');
 
         return DB::transaction(function () use ($couple, $user, $file, $data, $isFirstPhoto) {
             $path = $this->storeFile($file, $couple->id, 'photo');
@@ -42,6 +45,7 @@ class VaultService
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMimeType(),
                 'visibility' => $data['visibility'] ?? 'shared',
+                'comfort' => (bool) ($data['comfort'] ?? false),
                 'metadata' => $this->getImageMetadata($file),
             ]);
 
@@ -68,7 +72,7 @@ class VaultService
         $this->assertCoupleMember($couple, $user);
         $this->validateFileType($file, ['mp4', 'mov', 'avi', 'webm']);
         $this->validateFileSize($file, 50 * 1024); // 50MB in KB
-        $isFirstVideo = !$this->hasUploadedType($couple, 'video');
+        $isFirstVideo = ! $this->hasUploadedType($couple, 'video');
 
         return DB::transaction(function () use ($couple, $user, $file, $data, $isFirstVideo) {
             $path = $this->storeFile($file, $couple->id, 'video');
@@ -83,6 +87,7 @@ class VaultService
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMimeType(),
                 'visibility' => $data['visibility'] ?? 'shared',
+                'comfort' => (bool) ($data['comfort'] ?? false),
                 'metadata' => ['duration' => null], // Could extract with FFmpeg
             ]);
 
@@ -109,7 +114,7 @@ class VaultService
         $this->assertCoupleMember($couple, $user);
         $this->validateFileType($file, ['mp3', 'wav', 'm4a', 'ogg']);
         $this->validateFileSize($file, 10 * 1024); // 10MB in KB
-        $isFirstVoiceNote = !$this->hasUploadedType($couple, 'voice_note');
+        $isFirstVoiceNote = ! $this->hasUploadedType($couple, 'voice_note');
 
         return DB::transaction(function () use ($couple, $user, $file, $data, $isFirstVoiceNote) {
             $path = $this->storeFile($file, $couple->id, 'voice_note');
@@ -124,6 +129,7 @@ class VaultService
                 'file_size' => $file->getSize(),
                 'mime_type' => $file->getMimeType(),
                 'visibility' => $data['visibility'] ?? 'shared',
+                'comfort' => (bool) ($data['comfort'] ?? false),
                 'metadata' => ['duration' => null],
             ]);
 
@@ -157,6 +163,7 @@ class VaultService
                 'title' => $data['title'] ?? null,
                 'description' => $data['description'],
                 'visibility' => $data['visibility'] ?? 'shared',
+                'comfort' => (bool) ($data['comfort'] ?? false),
             ]);
 
             // Award XP for text memory
@@ -198,7 +205,7 @@ class VaultService
     {
         $this->assertCoupleMember($memory->couple, $user);
 
-        if (!$memory->canBeDeletedBy($user)) {
+        if (! $memory->canBeDeletedBy($user)) {
             throw new \Exception('You cannot delete this memory.');
         }
 
@@ -226,8 +233,9 @@ class VaultService
             throw new \Exception('Only the creator can lock this memory.');
         }
 
-        DB::transaction(function () use ($memory, $user) {
+        DB::transaction(function () use ($memory) {
             $memory->lock();
+            $memory->unlockApprovals()->delete();
 
             // Award XP for locking special memory
             $this->xpService->awardXp(
@@ -247,15 +255,28 @@ class VaultService
      */
     public function unlockMemory(Memory $memory, User $user): Memory
     {
+        return $this->approveDualUnlock($memory, $user);
+    }
+
+    public function approveDualUnlock(Memory $memory, User $user): Memory
+    {
         $this->assertCoupleMember($memory->couple, $user);
+        Gate::forUser($user)->authorize('approveUnlock', $memory);
 
-        // For now, allow creator to unlock
-        // In future, could require both partners to agree
-        if ($memory->created_by !== $user->id) {
-            throw new \Exception('Only the creator can unlock this memory.');
-        }
+        $now = now();
+        $expiresAt = $now->copy()->addMinutes(self::DUAL_UNLOCK_TTL_MINUTES);
 
-        $memory->unlock();
+        VaultUnlock::updateOrCreate(
+            [
+                'memory_id' => $memory->id,
+                'user_id' => $user->id,
+            ],
+            [
+                'approved_at' => $now,
+                'expires_at' => $expiresAt,
+            ]
+        );
+
         return $memory->fresh();
     }
 
@@ -270,16 +291,67 @@ class VaultService
             throw new \Exception('Only the creator can change visibility.');
         }
 
-        if ($memory->isLocked()) {
-            throw new \Exception('Locked memories cannot have their visibility changed.');
+        if ($memory->isDual()) {
+            throw new \Exception('Dual-consent memories cannot have their visibility changed.');
         }
 
-        if (!in_array($visibility, ['private', 'shared'])) {
+        if (! in_array($visibility, ['private', 'shared', 'dual'], true)) {
             throw new \InvalidArgumentException('Invalid visibility option.');
         }
 
         $memory->update(['visibility' => $visibility]);
+
         return $memory->fresh();
+    }
+
+    public function toggleComfort(Memory $memory, User $user): Memory
+    {
+        $this->assertCoupleMember($memory->couple, $user);
+        Gate::forUser($user)->authorize('toggleComfort', $memory);
+
+        $memory->update([
+            'comfort' => ! $memory->comfort,
+        ]);
+
+        return $memory->fresh();
+    }
+
+    public function getUnlockStatus(Memory $memory, User $user): array
+    {
+        $this->assertCoupleMember($memory->couple, $user);
+
+        $memberIds = $memory->couple->users()
+            ->where('couple_user.is_active', true)
+            ->pluck('users.id');
+
+        $approvals = $memory->unlockApprovals()
+            ->whereIn('user_id', $memberIds)
+            ->get()
+            ->keyBy('user_id');
+
+        $perUser = [];
+        foreach ($memberIds as $memberId) {
+            $approval = $approvals->get($memberId);
+            $perUser[$memberId] = [
+                'approved' => $approval !== null
+                    && $approval->approved_at !== null
+                    && ($approval->expires_at === null || $approval->expires_at->isFuture()),
+                'approved_at' => $approval?->approved_at,
+                'expires_at' => $approval?->expires_at,
+            ];
+        }
+
+        $isUnlocked = $memory->hasActiveDualUnlock();
+        $expiresAt = $isUnlocked
+            ? collect($perUser)->pluck('expires_at')->filter()->sort()->first()
+            : null;
+
+        return [
+            'is_dual' => $memory->isDual(),
+            'is_unlocked' => $isUnlocked,
+            'approvals' => $perUser,
+            'expires_at' => $expiresAt,
+        ];
     }
 
     /**
@@ -288,12 +360,12 @@ class VaultService
     public function addReaction(Memory $memory, User $user, string $reaction): MemoryReaction
     {
         $this->assertCoupleMember($memory->couple, $user);
-        if (!$memory->canBeViewedBy($user)) {
+        if (! $memory->canBeViewedBy($user)) {
             throw new AuthorizationException('You cannot react to this memory.');
         }
 
         $validReactions = array_keys(MemoryReaction::getReactionTypes());
-        if (!in_array($reaction, $validReactions)) {
+        if (! in_array($reaction, $validReactions)) {
             throw new \InvalidArgumentException('Invalid reaction type.');
         }
 
@@ -312,7 +384,7 @@ class VaultService
     public function removeReaction(Memory $memory, User $user): void
     {
         $this->assertCoupleMember($memory->couple, $user);
-        if (!$memory->canBeViewedBy($user)) {
+        if (! $memory->canBeViewedBy($user)) {
             throw new AuthorizationException('You cannot modify reactions for this memory.');
         }
 
@@ -324,17 +396,21 @@ class VaultService
     /**
      * Get memories for couple
      */
-    public function getMemories(Couple $couple, User $user, ?string $type = null)
+    public function getMemories(Couple $couple, User $user, ?string $type = null, bool $comfortOnly = false)
     {
         $this->assertCoupleMember($couple, $user);
 
         $query = Memory::forCouple($couple)
             ->visible($user)
-            ->with(['creator', 'reactions'])
+            ->with(['creator', 'reactions', 'unlockApprovals'])
             ->recent();
 
         if ($type) {
             $query->ofType($type);
+        }
+
+        if ($comfortOnly) {
+            $query->where('comfort', true);
         }
 
         return $query->get();
@@ -351,7 +427,7 @@ class VaultService
 
         return Memory::forCouple($couple)
             ->locked()
-            ->with(['creator', 'reactions'])
+            ->with(['creator', 'reactions', 'unlockApprovals'])
             ->recent()
             ->get();
     }
@@ -374,7 +450,8 @@ class VaultService
             'videos' => $memories->where('type', 'video')->count(),
             'voice_notes' => $memories->where('type', 'voice_note')->count(),
             'text' => $memories->where('type', 'text')->count(),
-            'locked' => $memories->where('visibility', 'locked')->count(),
+            'locked' => $memories->whereIn('visibility', ['dual', 'locked'])->count(),
+            'comfort' => $memories->where('comfort', true)->count(),
         ];
     }
 
@@ -383,7 +460,7 @@ class VaultService
      */
     protected function storeFile(UploadedFile $file, int $coupleId, string $type): string
     {
-        $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
+        $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
         $path = "memories/{$coupleId}/{$type}/{$filename}";
 
         Storage::putFileAs(
@@ -402,9 +479,9 @@ class VaultService
     {
         $extension = strtolower($file->getClientOriginalExtension());
 
-        if (!in_array($extension, $allowedExtensions)) {
+        if (! in_array($extension, $allowedExtensions)) {
             throw new \InvalidArgumentException(
-                'Invalid file type. Allowed: ' . implode(', ', $allowedExtensions)
+                'Invalid file type. Allowed: '.implode(', ', $allowedExtensions)
             );
         }
     }
@@ -430,6 +507,7 @@ class VaultService
     {
         try {
             [$width, $height] = getimagesize($file->getRealPath());
+
             return [
                 'width' => $width,
                 'height' => $height,
@@ -451,7 +529,7 @@ class VaultService
 
     protected function assertCoupleMember(Couple $couple, User $user): void
     {
-        if (!$couple->isActive()) {
+        if (! $couple->isActive()) {
             throw new AuthorizationException('Unauthorized couple access.');
         }
 
@@ -460,7 +538,7 @@ class VaultService
             ->where('couple_user.is_active', true)
             ->exists();
 
-        if (!$isMember) {
+        if (! $isMember) {
             throw new AuthorizationException('Unauthorized couple access.');
         }
     }

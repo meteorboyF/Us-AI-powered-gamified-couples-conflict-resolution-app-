@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class Memory extends Model
@@ -18,12 +19,14 @@ class Memory extends Model
         'file_size',
         'mime_type',
         'visibility',
+        'comfort',
         'locked_at',
         'metadata',
     ];
 
     protected $casts = [
         'metadata' => 'array',
+        'comfort' => 'boolean',
         'locked_at' => 'datetime',
     ];
 
@@ -49,6 +52,11 @@ class Memory extends Model
     public function reactions()
     {
         return $this->hasMany(MemoryReaction::class);
+    }
+
+    public function unlockApprovals(): HasMany
+    {
+        return $this->hasMany(VaultUnlock::class);
     }
 
     /**
@@ -89,7 +97,12 @@ class Memory extends Model
 
     public function isLocked(): bool
     {
-        return $this->visibility === 'locked';
+        return $this->isDual();
+    }
+
+    public function isDual(): bool
+    {
+        return in_array($this->visibility, ['dual', 'locked'], true);
     }
 
     /**
@@ -98,13 +111,13 @@ class Memory extends Model
     public function lock(): void
     {
         $this->update([
-            'visibility' => 'locked',
+            'visibility' => 'dual',
             'locked_at' => now(),
         ]);
     }
 
     /**
-     * Unlock this memory
+     * Legacy unlock path
      */
     public function unlock(): void
     {
@@ -119,6 +132,22 @@ class Memory extends Model
      */
     public function canBeViewedBy(User $user): bool
     {
+        if (! $this->canBeAccessedBy($user)) {
+            return false;
+        }
+
+        if (! $this->isDual()) {
+            return true;
+        }
+
+        return $this->hasActiveDualUnlock();
+    }
+
+    /**
+     * Check if user can access this memory page and metadata
+     */
+    public function canBeAccessedBy(User $user): bool
+    {
         // Creator can always view
         if ($this->created_by === $user->id) {
             return true;
@@ -129,15 +158,44 @@ class Memory extends Model
             return false;
         }
 
-        if (!$this->couple->isActive()) {
+        if (! $this->couple->isActive()) {
             return false;
         }
 
-        // Shared and locked memories visible to active couple members only
+        // Shared/dual memories visible to active couple members only
         return $this->couple->users()
             ->where('users.id', $user->id)
             ->where('couple_user.is_active', true)
             ->exists();
+    }
+
+    public function hasActiveDualUnlock(): bool
+    {
+        if (! $this->isDual()) {
+            return true;
+        }
+
+        $now = now();
+        $activeMemberIds = $this->couple->users()
+            ->where('couple_user.is_active', true)
+            ->pluck('users.id')
+            ->values();
+
+        if ($activeMemberIds->count() !== 2) {
+            return false;
+        }
+
+        $validApproverIds = $this->unlockApprovals()
+            ->whereIn('user_id', $activeMemberIds)
+            ->whereNotNull('approved_at')
+            ->where(function ($query) use ($now) {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', $now);
+            })
+            ->pluck('user_id')
+            ->unique()
+            ->values();
+
+        return $validApproverIds->count() === $activeMemberIds->count();
     }
 
     /**
@@ -159,7 +217,7 @@ class Memory extends Model
      */
     public function getFileUrl(): ?string
     {
-        if (!$this->file_path) {
+        if (! $this->file_path) {
             return null;
         }
 
@@ -171,7 +229,7 @@ class Memory extends Model
      */
     public function getThumbnailUrl(): ?string
     {
-        if (!$this->thumbnail_path) {
+        if (! $this->thumbnail_path) {
             return null;
         }
 
@@ -202,9 +260,9 @@ class Memory extends Model
         return $query->where(function ($q) use ($user) {
             // Own memories
             $q->where('created_by', $user->id)
-                // Or shared/locked memories in user's couple
+                // Or shared/dual memories in user's couple
                 ->orWhere(function ($q2) use ($user) {
-                    $q2->whereIn('visibility', ['shared', 'locked'])
+                    $q2->whereIn('visibility', ['shared', 'dual', 'locked'])
                         ->whereHas('couple.users', function ($q3) use ($user) {
                             $q3->where('users.id', $user->id);
                         });
@@ -217,7 +275,7 @@ class Memory extends Model
      */
     public function scopeLocked($query)
     {
-        return $query->where('visibility', 'locked');
+        return $query->whereIn('visibility', ['dual', 'locked']);
     }
 
     /**

@@ -6,8 +6,10 @@ use App\Models\Memory;
 use App\Models\User;
 use App\Services\CoupleService;
 use App\Services\VaultService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -64,7 +66,7 @@ class VaultFlowTest extends TestCase
         $this->assertFalse($memory->canBeViewedBy($partner));
     }
 
-    public function test_locked_memory_cannot_be_changed_or_deleted(): void
+    public function test_dual_memory_cannot_be_changed_or_deleted(): void
     {
         $user = User::factory()->create();
         $couple = app(CoupleService::class)->createCouple($user);
@@ -80,10 +82,151 @@ class VaultFlowTest extends TestCase
 
         $service->lockMemory($memory, $user);
         $lockedMemory = $memory->fresh();
-        $this->assertSame('locked', $lockedMemory->visibility);
+        $this->assertSame('dual', $lockedMemory->visibility);
 
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Locked memories cannot have their visibility changed.');
+        $this->expectExceptionMessage('Dual-consent memories cannot have their visibility changed.');
         $service->changeVisibility($lockedMemory, $user, 'private');
+    }
+
+    public function test_dual_memory_requires_both_approvals_to_unlock(): void
+    {
+        $owner = User::factory()->create();
+        $partner = User::factory()->create();
+        $coupleService = app(CoupleService::class);
+        $couple = $coupleService->createCouple($owner);
+        $coupleService->joinCouple($partner, $couple->invite_code);
+        $service = app(VaultService::class);
+
+        $memory = Memory::create([
+            'couple_id' => $couple->id,
+            'created_by' => $owner->id,
+            'type' => 'text',
+            'description' => 'dual memory',
+            'visibility' => 'dual',
+        ]);
+
+        $service->approveDualUnlock($memory, $owner);
+        $this->assertFalse($memory->fresh()->canBeViewedBy($owner));
+        $this->assertFalse($memory->fresh()->canBeViewedBy($partner));
+
+        $service->approveDualUnlock($memory, $partner);
+        $this->assertTrue($memory->fresh()->canBeViewedBy($owner));
+        $this->assertTrue($memory->fresh()->canBeViewedBy($partner));
+    }
+
+    public function test_user_cannot_approve_dual_unlock_twice_while_active(): void
+    {
+        $owner = User::factory()->create();
+        $partner = User::factory()->create();
+        $coupleService = app(CoupleService::class);
+        $couple = $coupleService->createCouple($owner);
+        $coupleService->joinCouple($partner, $couple->invite_code);
+        $service = app(VaultService::class);
+
+        $memory = Memory::create([
+            'couple_id' => $couple->id,
+            'created_by' => $owner->id,
+            'type' => 'text',
+            'description' => 'dual memory',
+            'visibility' => 'dual',
+        ]);
+
+        $service->approveDualUnlock($memory, $owner);
+
+        $this->expectException(AuthorizationException::class);
+        $service->approveDualUnlock($memory, $owner);
+    }
+
+    public function test_dual_unlock_expires_when_approvals_expire(): void
+    {
+        Carbon::setTestNow(now());
+        try {
+            $owner = User::factory()->create();
+            $partner = User::factory()->create();
+            $coupleService = app(CoupleService::class);
+            $couple = $coupleService->createCouple($owner);
+            $coupleService->joinCouple($partner, $couple->invite_code);
+            $service = app(VaultService::class);
+
+            $memory = Memory::create([
+                'couple_id' => $couple->id,
+                'created_by' => $owner->id,
+                'type' => 'text',
+                'description' => 'expiring memory',
+                'visibility' => 'dual',
+            ]);
+
+            $service->approveDualUnlock($memory, $owner);
+            $service->approveDualUnlock($memory, $partner);
+            $this->assertTrue($memory->fresh()->canBeViewedBy($owner));
+
+            Carbon::setTestNow(now()->addMinutes(VaultService::DUAL_UNLOCK_TTL_MINUTES + 1));
+            $this->assertFalse($memory->fresh()->canBeViewedBy($owner));
+            $this->assertFalse($memory->fresh()->canBeViewedBy($partner));
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_comfort_toggle_permissions_for_private_shared_and_dual(): void
+    {
+        $owner = User::factory()->create();
+        $partner = User::factory()->create();
+        $outsider = User::factory()->create();
+        $outsiderPartner = User::factory()->create();
+        $coupleService = app(CoupleService::class);
+        $couple = $coupleService->createCouple($owner);
+        $coupleService->joinCouple($partner, $couple->invite_code);
+        $outsiderCouple = $coupleService->createCouple($outsider);
+        $coupleService->joinCouple($outsiderPartner, $outsiderCouple->invite_code);
+        $service = app(VaultService::class);
+
+        $privateMemory = Memory::create([
+            'couple_id' => $couple->id,
+            'created_by' => $owner->id,
+            'type' => 'text',
+            'description' => 'private',
+            'visibility' => 'private',
+        ]);
+
+        $sharedMemory = Memory::create([
+            'couple_id' => $couple->id,
+            'created_by' => $owner->id,
+            'type' => 'text',
+            'description' => 'shared',
+            'visibility' => 'shared',
+        ]);
+
+        $dualMemory = Memory::create([
+            'couple_id' => $couple->id,
+            'created_by' => $owner->id,
+            'type' => 'text',
+            'description' => 'dual',
+            'visibility' => 'dual',
+        ]);
+
+        $service->toggleComfort($privateMemory, $owner);
+        $this->assertTrue($privateMemory->fresh()->comfort);
+
+        try {
+            $service->toggleComfort($privateMemory, $partner);
+            $this->fail('Partner should not toggle comfort on private memory they do not own.');
+        } catch (AuthorizationException $e) {
+            $this->assertStringContainsString('This action is unauthorized.', $e->getMessage());
+        }
+
+        $service->toggleComfort($sharedMemory, $partner);
+        $this->assertTrue($sharedMemory->fresh()->comfort);
+
+        $service->toggleComfort($dualMemory, $partner);
+        $this->assertTrue($dualMemory->fresh()->comfort);
+
+        try {
+            $service->toggleComfort($sharedMemory, $outsider);
+            $this->fail('Outsider should not toggle comfort on another couple memory.');
+        } catch (AuthorizationException $e) {
+            $this->assertStringContainsString('Unauthorized couple access.', $e->getMessage());
+        }
     }
 }

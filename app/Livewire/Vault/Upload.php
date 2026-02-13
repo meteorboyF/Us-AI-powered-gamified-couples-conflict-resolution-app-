@@ -12,10 +12,17 @@ class Upload extends Component
     use WithFileUploads;
 
     public $uploadType = 'photo';
+
     public $file;
+
     public $title;
+
     public $description;
+
     public $visibility = 'shared';
+
+    public $comfort = false;
+
     public $couple;
 
     public function mount()
@@ -36,7 +43,8 @@ class Upload extends Component
             'file' => $this->uploadType === 'text' ? '' : 'required|file',
             'description' => $this->uploadType === 'text' ? 'required|max:1000' : 'nullable|max:500',
             'title' => 'nullable|max:100',
-            'visibility' => 'required|in:private,shared',
+            'visibility' => 'required|in:private,shared,dual',
+            'comfort' => 'boolean',
         ]);
 
         $vaultService = app(VaultService::class);
@@ -46,6 +54,7 @@ class Upload extends Component
                 'title' => $this->title,
                 'description' => $this->description,
                 'visibility' => $this->visibility,
+                'comfort' => $this->comfort,
             ];
 
             switch ($this->uploadType) {
@@ -68,6 +77,7 @@ class Upload extends Component
             }
 
             session()->flash('message', $message);
+
             return redirect()->route('vault.gallery');
 
         } catch (\Exception $e) {
