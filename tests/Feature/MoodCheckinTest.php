@@ -48,6 +48,9 @@ class MoodCheckinTest extends TestCase
             'couple_id' => $couple->id,
             'xp_total' => 10,
         ]);
+        $world = $couple->world()->firstOrFail();
+        $meta = $world->cosmetics['__meta'] ?? [];
+        $this->assertArrayHasKey('vibe_score', $meta);
     }
 
     public function test_partner_view_shows_summary_but_hides_private_note(): void

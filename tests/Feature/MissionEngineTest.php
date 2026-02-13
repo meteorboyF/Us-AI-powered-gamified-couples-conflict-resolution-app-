@@ -131,4 +131,40 @@ class MissionEngineTest extends TestCase
         $this->expectExceptionMessage('Cannot acknowledge your own completion.');
         $service->acknowledgeMission($completion->fresh(), $user);
     }
+
+    public function test_weekly_completion_unlocks_cosmetic_and_applies_small_bonus_once(): void
+    {
+        $user = User::factory()->create();
+        $couple = app(CoupleService::class)->createCouple($user);
+
+        $mission = Mission::create([
+            'title' => 'Weekly Bonus Mission',
+            'description' => 'Desc',
+            'type' => 'weekly',
+            'xp_reward' => 40,
+            'is_active' => true,
+        ]);
+
+        $assignment = MissionAssignment::create([
+            'couple_id' => $couple->id,
+            'mission_id' => $mission->id,
+            'assigned_for_date' => today()->startOfWeek(),
+            'status' => 'pending',
+        ]);
+
+        $service = app(MissionService::class);
+        $service->completeMission($assignment, $user);
+
+        $this->assertDatabaseHas('xp_events', [
+            'couple_id' => $couple->id,
+            'user_id' => $user->id,
+            'type' => 'mission',
+            'xp_amount' => 5,
+        ]);
+
+        $world = $couple->world()->firstOrFail();
+        $this->assertTrue(collect($world->cosmetics ?? [])->contains(function ($cosmetic) {
+            return is_string($cosmetic) && str_starts_with($cosmetic, 'weekly_glow_');
+        }));
+    }
 }

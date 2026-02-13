@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\CoupleService;
 use App\Services\RepairService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -49,6 +50,9 @@ class RepairFlowTest extends TestCase
             'status' => 'completed',
         ]);
         $this->assertDatabaseCount('xp_events', 4); // 10 + 10 + 50 + 20
+        $world = $session->couple->world()->firstOrFail();
+        $meta = $world->cosmetics['__meta'] ?? [];
+        $this->assertTrue(isset($meta['warmth_boost_until']) && Carbon::parse($meta['warmth_boost_until'])->isFuture());
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('This repair session is already completed.');

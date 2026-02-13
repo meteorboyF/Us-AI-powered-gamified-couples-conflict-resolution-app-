@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 class MissionService
 {
     public function __construct(
-        protected XpService $xpService
+        protected XpService $xpService,
+        protected WorldVibeService $worldVibeService
     ) {}
 
     /**
@@ -108,6 +109,29 @@ class MissionService
                     'mission_title' => $assignment->mission->title,
                 ]
             );
+
+            if ($assignment->mission->type === 'weekly' && $assignment->completions()->count() === 1) {
+                $this->xpService->awardXp(
+                    $assignment->couple,
+                    'mission',
+                    $user,
+                    5,
+                    ['reason' => 'weekly_completion_bonus', 'mission_assignment_id' => $assignment->id]
+                );
+
+                $world = $assignment->couple->world;
+                if ($world) {
+                    $cosmetics = $world->cosmetics ?? [];
+                    $weeklyCosmetic = 'weekly_glow_'.now()->startOfWeek()->format('Ymd');
+                    if (! in_array($weeklyCosmetic, $cosmetics, true)) {
+                        $cosmetics[] = $weeklyCosmetic;
+                        $world->cosmetics = $cosmetics;
+                        $world->save();
+                    }
+                }
+            }
+
+            $this->worldVibeService->refreshForCouple($assignment->couple);
 
             return $completion;
         });

@@ -243,6 +243,15 @@ class AiCoachTest extends TestCase
         $suggestion->refresh();
         $this->assertSame(AiBridgeSuggestion::STATUS_SENT, $suggestion->status);
         $this->assertNotNull($suggestion->sent_at);
+        $this->assertDatabaseHas('xp_events', [
+            'couple_id' => $couple->id,
+            'user_id' => $user->id,
+            'type' => 'chat',
+            'xp_amount' => 3,
+        ]);
+        $world = $couple->world()->firstOrFail();
+        $meta = $world->cosmetics['__meta'] ?? [];
+        $this->assertArrayHasKey('coach_glow_until', $meta);
     }
 
     public function test_cannot_send_twice(): void

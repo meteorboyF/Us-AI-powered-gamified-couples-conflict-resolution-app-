@@ -13,7 +13,8 @@ class RepairService
 {
     public function __construct(
         protected XpService $xpService,
-        protected NotificationService $notificationService
+        protected NotificationService $notificationService,
+        protected WorldVibeService $worldVibeService
     ) {}
 
     protected const SHARED_GOALS = [
@@ -249,6 +250,8 @@ class RepairService
                     ['reason' => 'first_repair_bonus']
                 );
             }
+
+            $this->worldVibeService->applyWarmthBoost($session->couple);
 
             return $session->fresh();
         });

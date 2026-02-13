@@ -4,6 +4,7 @@ namespace App\Livewire\MoodCheckin;
 
 use App\Models\MoodCheckin;
 use App\Services\CoupleService;
+use App\Services\WorldVibeService;
 use App\Services\XpService;
 use Livewire\Component;
 
@@ -102,6 +103,7 @@ class Create extends Component
                 ['mood_level' => $this->moodLevel]
             );
         }
+        app(WorldVibeService::class)->refreshForCouple($couple);
 
         // Create mood alert notification if mood is low
         if ($this->moodLevel <= 2) {

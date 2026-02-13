@@ -13,6 +13,14 @@
                 linear-gradient(180deg, rgba(30, 41, 59, 0) 0%, rgba(15, 23, 42, 0.38) 100%);
         }
 
+        .warmth-overlay {
+            background: radial-gradient(circle at 50% 35%, rgba(251, 191, 36, 0.2), transparent 60%);
+        }
+
+        .coach-overlay {
+            background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.18), transparent 65%);
+        }
+
         @keyframes itemPulse {
             0% { transform: scale(1); }
             45% { transform: scale(1.08); }
@@ -65,6 +73,7 @@
                         <div class="h-full rounded-full bg-gradient-to-r from-sky-500 via-emerald-400 to-amber-300 transition-all duration-700"
                             style="width: {{ $levelProgress }}%"></div>
                     </div>
+                    <p class="mt-2 text-xs font-medium text-slate-500">Vibe score: {{ $vibeScore }}/100</p>
                 </div>
             </div>
 
@@ -76,6 +85,12 @@
                         <div class="absolute right-[12%] top-[18%] h-12 w-12 rounded-full bg-amber-200/40 blur-sm"></div>
                         <div class="absolute left-[50%] top-[10%] h-2 w-2 rounded-full bg-white/70"></div>
                     </div>
+                    @if($warmthBoostActive)
+                        <div class="pointer-events-none absolute inset-0 warmth-overlay"></div>
+                    @endif
+                    @if($coachGlowActive)
+                        <div class="pointer-events-none absolute inset-0 coach-overlay"></div>
+                    @endif
 
                     <div class="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] world-ground"></div>
 

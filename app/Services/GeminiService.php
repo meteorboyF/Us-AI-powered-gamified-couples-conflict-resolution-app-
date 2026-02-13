@@ -27,8 +27,10 @@ class GeminiService
 
     protected int $maxRetries = 2;
 
-    public function __construct()
-    {
+    public function __construct(
+        protected XpService $xpService,
+        protected WorldVibeService $worldVibeService
+    ) {
         $this->apiKey = config('services.gemini.key');
         $this->baseUrl = rtrim(config('services.gemini.endpoint', 'https://generativelanguage.googleapis.com/v1beta'), '/');
         $this->model = config('services.gemini.model', 'gemini-1.5-flash');
@@ -407,6 +409,15 @@ class GeminiService
                 'status' => AiBridgeSuggestion::STATUS_SENT,
                 'sent_at' => now(),
             ]);
+
+            $this->xpService->awardXp(
+                $suggestion->couple,
+                'chat',
+                $suggestion->user,
+                3,
+                ['reason' => 'coach_bridge_sent', 'ai_bridge_suggestion_id' => $suggestion->id]
+            );
+            $this->worldVibeService->applyCoachGlow($suggestion->couple);
 
             return $message;
         });

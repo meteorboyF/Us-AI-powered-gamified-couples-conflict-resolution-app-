@@ -6,6 +6,7 @@ use App\Models\MissionCompletion;
 use App\Models\MoodCheckin;
 use App\Services\CoupleService;
 use App\Services\WorldBuildingService;
+use App\Services\WorldVibeService;
 use App\Services\XpService;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
@@ -50,6 +51,12 @@ class CoupleWorld extends Component
     public $placementItemKey = null;
 
     public $memoryFrameHighlight = null;
+
+    public $vibeScore = 0;
+
+    public $warmthBoostActive = false;
+
+    public $coachGlowActive = false;
 
     public function mount()
     {
@@ -270,6 +277,7 @@ class CoupleWorld extends Component
     protected function loadWorldState(): void
     {
         $this->couple = $this->couple->fresh();
+        app(WorldVibeService::class)->refreshForCouple($this->couple);
         $state = app(WorldBuildingService::class)->getWorldState($this->couple, auth()->user());
 
         $this->world = $state['world'];
@@ -307,6 +315,11 @@ class CoupleWorld extends Component
         $this->memoryFrameHighlight = $memoryFrameBuilt
             ? app(WorldBuildingService::class)->getMemoryFrameHighlight($this->couple, auth()->user())
             : null;
+
+        $meta = (array) (($this->world->cosmetics ?? [])['__meta'] ?? []);
+        $this->vibeScore = (int) ($meta['vibe_score'] ?? 0);
+        $this->warmthBoostActive = ! empty($meta['warmth_boost_until']) && Carbon::parse($meta['warmth_boost_until'])->isFuture();
+        $this->coachGlowActive = ! empty($meta['coach_glow_until']) && Carbon::parse($meta['coach_glow_until'])->isFuture();
     }
 
     protected function calculateCheckinStreak(): int

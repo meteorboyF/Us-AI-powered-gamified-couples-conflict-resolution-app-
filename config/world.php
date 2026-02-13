@@ -11,6 +11,24 @@ return [
         ],
     ],
 
+    'vibe' => [
+        'recent_days' => 7,
+        'xp_target_per_window' => 140,
+        'weights' => [
+            'mood' => 0.5,
+            'xp_rate' => 0.35,
+            'repair' => 0.15,
+        ],
+        'repair_bonus_per_completion' => 40,
+        'warmth_boost_points' => 12,
+        'warmth_boost_hours' => 6,
+        'thresholds' => [
+            'bright' => 68,
+            'calm' => 42,
+        ],
+        'coach_glow_minutes' => 20,
+    ],
+
     'world_types' => [
         'garden' => [
             'label' => 'Enchanted Garden',
