@@ -10,6 +10,7 @@ use App\Services\WorldVibeService;
 use App\Services\XpService;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 use Livewire\Component;
 
 class CoupleWorld extends Component
@@ -266,12 +267,38 @@ class CoupleWorld extends Component
         return array_merge(['all'], $categories);
     }
 
-    public function render()
+    public function render(): View
     {
-        return view('livewire.dashboard.couple-world', [
+        /** @var View $view */
+        $view = view('livewire.dashboard.couple-world', [
             'filteredCatalog' => $this->filteredCatalog(),
             'categories' => $this->catalogCategories(),
-        ])->layout('layouts.app');
+        ]);
+        $view->layout('layouts.app');
+
+        return $view;
+    }
+
+    public function placementItemName(): string
+    {
+        $itemKey = $this->placementItemKey;
+
+        if (! is_string($itemKey) || ! isset($this->catalog[$itemKey])) {
+            return 'item';
+        }
+
+        return (string) ($this->catalog[$itemKey]['name'] ?? 'item');
+    }
+
+    public function selectedItemLevel(): int
+    {
+        $itemKey = $this->selectedItemKey;
+
+        if (! is_string($itemKey) || ! isset($this->items[$itemKey])) {
+            return 0;
+        }
+
+        return (int) ($this->items[$itemKey]['level'] ?? 0);
     }
 
     protected function loadWorldState(): void

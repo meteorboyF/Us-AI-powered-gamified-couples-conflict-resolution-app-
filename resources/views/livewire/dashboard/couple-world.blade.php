@@ -141,7 +141,7 @@
                     </div>
                     @if($placementMode && $placementItemKey)
                         <div class="absolute right-4 top-4 rounded-xl bg-sky-100 px-3 py-2 text-xs font-semibold text-sky-800">
-                            Placement mode: choose a slot for {{ $catalog[$placementItemKey]['name'] ?? 'item' }}
+                            Placement mode: choose a slot for {{ $this->placementItemName() }}
                         </div>
                     @endif
                 </div>
@@ -221,7 +221,7 @@
 
             @if($selectedItemKey && $selectedItemData)
                 @php
-                    $selectedLevel = $items[$selectedItemKey]['level'] ?? 0;
+                    $selectedLevel = $this->selectedItemLevel();
                     $nextLevel = $selectedLevel + 1;
                     $selectedCost = $this->nextCostFor($selectedItemKey);
                     $currentVisual = $selectedLevel > 0 ? ($selectedItemData['visuals'][$selectedLevel] ?? 'none') : 'none';

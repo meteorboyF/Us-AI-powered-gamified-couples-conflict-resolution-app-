@@ -7,6 +7,7 @@ use App\Models\AiChat;
 use App\Services\CoupleService;
 use App\Services\GeminiService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 use Livewire\Component;
 
 class Chat extends Component
@@ -201,8 +202,12 @@ class Chat extends Component
         return $message.' Ref: '.$correlationId;
     }
 
-    public function render()
+    public function render(): View
     {
-        return view('livewire.coach.chat')->layout('layouts.app');
+        /** @var View $view */
+        $view = view('livewire.coach.chat');
+        $view->layout('layouts.app');
+
+        return $view;
     }
 }
