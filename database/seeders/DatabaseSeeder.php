@@ -23,7 +23,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             MissionSeeder::class,
-            DemoSeeder::class,
         ]);
     }
 }

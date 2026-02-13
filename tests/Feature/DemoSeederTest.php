@@ -2,10 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\AiChat;
 use App\Models\Couple;
-use App\Models\Memory;
 use App\Models\User;
+use App\Models\World;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,17 +16,18 @@ class DemoSeederTest extends TestCase
     {
         $this->seed(\Database\Seeders\DemoSeeder::class);
 
-        $this->assertDatabaseHas('users', ['email' => 'demo.alex@example.com']);
-        $this->assertDatabaseHas('users', ['email' => 'demo.sam@example.com']);
+        $this->assertDatabaseHas('users', ['email' => 'couplea1@demo.test']);
+        $this->assertDatabaseHas('users', ['email' => 'couplea2@demo.test']);
+        $this->assertDatabaseHas('users', ['email' => 'coupleb1@demo.test']);
+        $this->assertDatabaseHas('users', ['email' => 'coupleb2@demo.test']);
+        $this->assertSame(4, User::where('email', 'like', 'couple%@demo.test')->count());
 
-        $couple = Couple::query()->where('invite_code', 'DEMOLOVE')->first();
-        $this->assertNotNull($couple);
+        $this->assertSame(2, Couple::count());
+        $this->assertSame(2, World::count());
 
-        $alex = User::query()->where('email', 'demo.alex@example.com')->firstOrFail();
-
-        $this->assertTrue($couple->world()->exists());
-        $this->assertTrue(Memory::query()->where('couple_id', $couple->id)->exists());
-        $this->assertTrue(AiChat::query()->where('couple_id', $couple->id)->exists());
-        $this->assertTrue($couple->users()->where('users.id', $alex->id)->exists());
+        $coupleA = Couple::query()->where('invite_code', 'COUPLEA01')->firstOrFail();
+        $coupleB = Couple::query()->where('invite_code', 'COUPLEB01')->firstOrFail();
+        $this->assertSame('garden', $coupleA->world->world_type);
+        $this->assertSame('space', $coupleB->world->world_type);
     }
 }

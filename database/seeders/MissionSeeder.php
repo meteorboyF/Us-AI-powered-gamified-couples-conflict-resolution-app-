@@ -162,7 +162,10 @@ class MissionSeeder extends Seeder
         ];
 
         foreach ($missions as $mission) {
-            Mission::create($mission);
+            Mission::updateOrCreate(
+                ['title' => $mission['title']],
+                $mission
+            );
         }
     }
 }

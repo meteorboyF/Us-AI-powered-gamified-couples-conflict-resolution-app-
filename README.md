@@ -219,33 +219,37 @@ DB_PASSWORD=
 php artisan migrate:fresh --seed
 ```
 
-## /demo Guide
+## Demo Mode
 
-Use this script for a fast 2-minute walkthrough.
+Seed rich deterministic demo data with one command:
 
-### Setup
+```bash
+php artisan us:seed-demo
+```
+
+If you want a fully fresh database first:
 
 ```bash
 php artisan migrate:fresh --seed
-php artisan serve
+php artisan us:seed-demo
 ```
 
-Open: `http://127.0.0.1:8000`
+### Demo Credentials
 
-### Demo Login Users
+- `couplea1@demo.test` / `DemoPass123!`
+- `couplea2@demo.test` / `DemoPass123!`
+- `coupleb1@demo.test` / `DemoPass123!`
+- `coupleb2@demo.test` / `DemoPass123!`
 
-- `demo.alex@example.com` / `password`
-- `demo.sam@example.com` / `password`
+### Quick Testing Checklist
 
-### 2-Minute Flow
-
-1. Log in as `demo.alex@example.com`.
-2. Open Dashboard and show world level/XP progression.
-3. Open `Vault` and show sample memories + comfort tag.
-4. Open `AI Coach` and show sanitized sample chat context.
-5. Open `Missions` and complete one mission.
-6. Open `Gifts` and generate suggestions.
-7. Open notifications bell to show in-app reminders and alerts.
+1. Log in as `couplea1@demo.test`, open Dashboard, verify Garden world level/items/placement.
+2. Log in as `coupleb1@demo.test`, verify a different Space world and history.
+3. Open `Missions` and inspect daily/weekly assignment and completion history.
+4. Open `Repair` and confirm at least two completed sessions with acknowledged agreements.
+5. Open `Vault` and verify shared/private/locked memories and comfort-flagged entries.
+6. Open `AI Coach` and inspect vent + bridge histories and sent bridge suggestion.
+7. Open `Gifts` and verify both partner wishlists and saved suggestion records.
 
 ## 📝 Git Setup
 
