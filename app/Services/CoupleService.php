@@ -6,6 +6,7 @@ use App\Models\Couple;
 use App\Models\User;
 use App\Models\World;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class CoupleService
 {
@@ -14,23 +15,29 @@ class CoupleService
      */
     public function createCouple(User $user, array $preferences = []): Couple
     {
-        $couple = Couple::create([
-            'invite_code' => $this->generateUniqueInviteCode(),
-            'created_by' => $user->id,
-            'status' => 'active',
-        ]);
+        if ($user->couples()->where('status', 'active')->where('couple_user.is_active', true)->exists()) {
+            throw new \Exception('You are already in an active couple.');
+        }
 
-        // Attach the creator to the couple
-        $couple->users()->attach($user->id, [
-            'role' => 'partner',
-            'is_active' => true,
-            'joined_at' => now(),
-        ]);
+        return DB::transaction(function () use ($user, $preferences) {
+            $couple = Couple::create([
+                'invite_code' => $this->generateUniqueInviteCode(),
+                'created_by' => $user->id,
+                'status' => 'active',
+            ]);
 
-        // Create the couple's world
-        $this->createWorld($couple, $preferences);
+            // Attach the creator to the couple
+            $couple->users()->attach($user->id, [
+                'role' => 'partner',
+                'is_active' => true,
+                'joined_at' => now(),
+            ]);
 
-        return $couple->fresh();
+            // Create the couple's world
+            $this->createWorld($couple, $preferences);
+
+            return $couple->fresh();
+        });
     }
 
     /**
@@ -107,7 +114,13 @@ class CoupleService
     {
         $couple->update(['status' => 'unlinked']);
 
-        // Optionally deactivate users in the pivot table
-        $couple->users()->update(['is_active' => false]);
+        // Deactivate memberships in the couple pivot.
+        $couple->users()
+            ->newPivotStatement()
+            ->where('couple_id', $couple->id)
+            ->update([
+                'is_active' => false,
+                'updated_at' => now(),
+            ]);
     }
 }
