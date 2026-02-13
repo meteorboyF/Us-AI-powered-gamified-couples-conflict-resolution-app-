@@ -197,6 +197,28 @@ php artisan test
 php artisan test --coverage
 ```
 
+## 🩺 Dev Doctor (Quick Checks)
+
+If local setup fails, run this short checklist first:
+
+1. Start XAMPP and make sure both Apache and MySQL are running.
+2. Verify database connection values in `.env`:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=us_app
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+3. Run migrations and seeders:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
 ## 📝 Git Setup
 
 See [GIT_SETUP.md](GIT_SETUP.md) for detailed Git configuration instructions.
