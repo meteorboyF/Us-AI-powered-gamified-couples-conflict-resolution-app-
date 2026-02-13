@@ -10,9 +10,13 @@ use Livewire\Component;
 class Create extends Component
 {
     public $existingCheckin;
+
     public $moodLevel = 3;
+
     public $reasonTags = [];
+
     public $needs = [];
+
     public $note = '';
 
     public $availableReasons = [
@@ -42,7 +46,7 @@ class Create extends Component
     {
         $couple = app(CoupleService::class)->getUserCouple(auth()->user());
 
-        if (!$couple) {
+        if (! $couple) {
             return;
         }
 
@@ -51,7 +55,7 @@ class Create extends Component
             ->where('date', today()->toDateString())
             ->first();
 
-        if (!$this->existingCheckin) {
+        if (! $this->existingCheckin) {
             return;
         }
 
@@ -70,8 +74,9 @@ class Create extends Component
 
         $couple = $coupleService->getUserCouple(auth()->user());
 
-        if (!$couple) {
+        if (! $couple) {
             session()->flash('error', 'You need to be in a couple to check in.');
+
             return redirect()->route('dashboard');
         }
 
@@ -113,6 +118,7 @@ class Create extends Component
             ? 'Check-in complete! +10 XP'
             : 'Check-in updated for today.';
         session()->flash('message', $message);
+
         return redirect()->route('dashboard');
     }
 

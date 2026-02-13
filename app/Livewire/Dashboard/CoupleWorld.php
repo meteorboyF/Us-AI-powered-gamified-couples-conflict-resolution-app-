@@ -9,10 +9,15 @@ use Livewire\Component;
 class CoupleWorld extends Component
 {
     public $couple;
+
     public $world;
+
     public $recentXpEvents;
+
     public $todayXp;
+
     public $xpForNextLevel;
+
     public $levelProgress;
 
     public function mount()

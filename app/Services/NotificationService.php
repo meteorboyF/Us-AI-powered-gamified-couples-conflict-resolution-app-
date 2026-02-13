@@ -11,8 +11,7 @@ class NotificationService
 {
     public function __construct(
         protected XpService $xpService
-    ) {
-    }
+    ) {}
 
     /**
      * Create a notification for a user
@@ -48,7 +47,7 @@ class NotificationService
     ): ?Notification {
         $partner = $couple->users()->where('users.id', '!=', $sender->id)->first();
 
-        if (!$partner) {
+        if (! $partner) {
             return null;
         }
 
@@ -83,7 +82,7 @@ class NotificationService
         $notification->markAsRead();
 
         // Award XP for reading mood alerts (encourages support)
-        if ($notification->type === 'mood_alert' && !$notification->wasRecentlyCreated) {
+        if ($notification->type === 'mood_alert' && ! $notification->wasRecentlyCreated) {
             $this->xpService->awardXp(
                 $notification->couple,
                 'checkin',
@@ -114,7 +113,7 @@ class NotificationService
         }
 
         $moodEmoji = $moodLevel === 1 ? '😢' : '😕';
-        $needsText = !empty($needs) ? ' They need: ' . implode(', ', $needs) : '';
+        $needsText = ! empty($needs) ? ' They need: '.implode(', ', $needs) : '';
 
         $this->notifyPartner(
             $couple,
@@ -135,7 +134,7 @@ class NotificationService
             $couple,
             $user,
             'mission_complete',
-            "🎯 Mission Completed!",
+            '🎯 Mission Completed!',
             "{$user->name} completed: {$missionTitle} (+{$xpReward} XP)",
             ['mission_title' => $missionTitle, 'xp_reward' => $xpReward]
         );
@@ -151,7 +150,7 @@ class NotificationService
                 $user,
                 $couple,
                 'level_up',
-                "🎉 Level Up!",
+                '🎉 Level Up!',
                 "Your world reached Level {$newLevel}! Keep growing together.",
                 ['level' => $newLevel]
             );

@@ -8,7 +8,9 @@ use Livewire\Component;
 class Bell extends Component
 {
     public $unreadCount = 0;
+
     public $notifications;
+
     public $showDropdown = false;
 
     public function mount()
@@ -28,7 +30,7 @@ class Bell extends Component
 
     public function toggleDropdown()
     {
-        $this->showDropdown = !$this->showDropdown;
+        $this->showDropdown = ! $this->showDropdown;
 
         if ($this->showDropdown) {
             $notificationService = app(NotificationService::class);

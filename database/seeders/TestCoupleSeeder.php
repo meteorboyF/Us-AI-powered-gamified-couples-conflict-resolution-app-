@@ -2,18 +2,18 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
 use App\Models\Couple;
+use App\Models\Memory;
 use App\Models\Mission;
 use App\Models\MissionAssignment;
 use App\Models\MissionCompletion;
-use App\Models\Memory;
-use App\Models\RepairSession;
 use App\Models\RepairAgreement;
+use App\Models\RepairSession;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
 
 class TestCoupleSeeder extends Seeder
 {
@@ -35,7 +35,7 @@ class TestCoupleSeeder extends Seeder
             if ($user->ownedTeams()->count() === 0) {
                 $user->ownedTeams()->save(\App\Models\Team::forceCreate([
                     'user_id' => $user->id,
-                    'name' => explode(' ', $user->name, 2)[0] . "'s Team",
+                    'name' => explode(' ', $user->name, 2)[0]."'s Team",
                     'personal_team' => true,
                 ]));
                 $user->refresh();
@@ -50,15 +50,15 @@ class TestCoupleSeeder extends Seeder
         );
 
         // 3. Attach Users to Couple (Conceptually check if attached)
-        if (!$couple->users()->where('users.id', $romeo->id)->exists()) {
+        if (! $couple->users()->where('users.id', $romeo->id)->exists()) {
             $couple->users()->attach($romeo->id, ['role' => 'admin', 'is_active' => true, 'joined_at' => now()]);
         }
-        if (!$couple->users()->where('users.id', $juliet->id)->exists()) {
+        if (! $couple->users()->where('users.id', $juliet->id)->exists()) {
             $couple->users()->attach($juliet->id, ['role' => 'member', 'is_active' => true, 'joined_at' => now()]);
         }
 
         // 4. Create World (XP System)
-        if (!$couple->world) {
+        if (! $couple->world) {
             $couple->world()->create([
                 'level' => 3,
                 'xp_total' => 450,
@@ -157,11 +157,11 @@ class TestCoupleSeeder extends Seeder
         $filename = 'dummy-photo.jpg';
         $path = "memories/{$couple->id}/photo/{$filename}";
 
-        // Create a simple blank image or text file masquerading as image if GD not available, 
+        // Create a simple blank image or text file masquerading as image if GD not available,
         // but let's try to grab a placeholder if possible, or just create a text file.
-        // To be safe and simple, we'll write a text file but call it .jpg - browsers won't render it 
+        // To be safe and simple, we'll write a text file but call it .jpg - browsers won't render it
         // but it won't crash the server. BETTER: Copy a real asset if we had one.
-        // Actually, let's just make a text file. The browser will show broken image icon, which is acceptable for a seeder 
+        // Actually, let's just make a text file. The browser will show broken image icon, which is acceptable for a seeder
         // unless I download one. Let's try to download one.
 
         try {

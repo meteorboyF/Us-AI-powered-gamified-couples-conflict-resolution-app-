@@ -132,4 +132,3 @@ class AccessControlTest extends TestCase
         return [$owner, $partner, $outsider, $targetCouple];
     }
 }
-

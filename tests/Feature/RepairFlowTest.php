@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\RepairSession;
 use App\Models\User;
 use App\Services\CoupleService;
 use App\Services\RepairService;
@@ -82,4 +81,3 @@ class RepairFlowTest extends TestCase
         return [$user, $partner, $session->fresh(), $service];
     }
 }
-

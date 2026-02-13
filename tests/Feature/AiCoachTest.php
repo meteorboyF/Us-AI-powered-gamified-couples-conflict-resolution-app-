@@ -48,4 +48,3 @@ class AiCoachTest extends TestCase
         $this->assertSame('bridge', AiChat::where('user_id', $user->id)->where('is_active', true)->value('type'));
     }
 }
-

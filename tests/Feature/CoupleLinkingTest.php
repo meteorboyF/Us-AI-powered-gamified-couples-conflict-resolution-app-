@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Couple;
 use App\Models\User;
 use App\Services\CoupleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -110,4 +109,3 @@ class CoupleLinkingTest extends TestCase
         $this->assertNull($service->getUserCouple($partner));
     }
 }
-

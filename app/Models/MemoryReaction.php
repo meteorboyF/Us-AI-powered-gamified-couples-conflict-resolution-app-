@@ -48,6 +48,7 @@ class MemoryReaction extends Model
     public function getEmoji(): string
     {
         $reactions = self::getReactionTypes();
+
         return $reactions[$this->reaction] ?? '❤️';
     }
 }

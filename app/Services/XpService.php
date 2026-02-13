@@ -31,7 +31,7 @@ class XpService
         array $metadata = []
     ): XpEvent {
         // Validate event type
-        if (!isset(self::XP_REWARDS[$type])) {
+        if (! isset(self::XP_REWARDS[$type])) {
             throw new \InvalidArgumentException("Invalid XP event type: {$type}");
         }
 

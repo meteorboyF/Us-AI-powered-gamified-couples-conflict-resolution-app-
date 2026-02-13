@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 class GeminiService
 {
     protected $apiKey;
+
     protected $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     public function __construct()
@@ -31,19 +32,19 @@ class GeminiService
         // For REST API, we'll prepend it to the context.
         $contents[] = [
             'role' => 'user',
-            'parts' => [['text' => "System Instruction: " . $systemInstruction]]
+            'parts' => [['text' => 'System Instruction: '.$systemInstruction]],
         ];
 
         $contents[] = [
             'role' => 'model',
-            'parts' => [['text' => "Understood. I will act as the localized relationship coach based on these instructions."]]
+            'parts' => [['text' => 'Understood. I will act as the localized relationship coach based on these instructions.']],
         ];
 
         foreach ($messages as $msg) {
             $role = $msg['role'] === 'user' ? 'user' : 'model';
             $contents[] = [
                 'role' => $role,
-                'parts' => [['text' => $msg['content']]]
+                'parts' => [['text' => $msg['content']]],
             ];
         }
 
@@ -52,23 +53,25 @@ class GeminiService
         }
 
         try {
-            $response = Http::post($this->baseUrl . '?key=' . $this->apiKey, [
+            $response = Http::post($this->baseUrl.'?key='.$this->apiKey, [
                 'contents' => $contents,
                 'generationConfig' => [
                     'temperature' => 0.7,
                     'maxOutputTokens' => 500,
-                ]
+                ],
             ]);
 
             if ($response->successful()) {
                 return $response->json('candidates.0.content.parts.0.text') ?? "I'm deep in thought but couldn't formulate a response.";
             } else {
-                Log::error('Gemini API Error: ' . $response->body());
-                return "I'm having trouble connecting to my brain right now. Please try again later. (Error: " . $response->status() . ")";
+                Log::error('Gemini API Error: '.$response->body());
+
+                return "I'm having trouble connecting to my brain right now. Please try again later. (Error: ".$response->status().')';
             }
         } catch (\Exception $e) {
-            Log::error('Gemini Connection Exception: ' . $e->getMessage());
-            return "Connection error. Please check your internet connection and try again.";
+            Log::error('Gemini Connection Exception: '.$e->getMessage());
+
+            return 'Connection error. Please check your internet connection and try again.';
         }
     }
 
@@ -78,13 +81,13 @@ class GeminiService
     protected function getSystemPrompt(string $mode): string
     {
         if ($mode === 'vent') {
-            return "You are an empathetic, non-judgmental relationship coach. 
+            return 'You are an empathetic, non-judgmental relationship coach. 
             Your goal is to provide a safe space for the user to express their frustrations. 
             Validate their feelings using techniques like reflective listening. 
             Do NOT try to solve the problem immediately. 
             Do NOT take sides. 
             Ask 1-2 open-ended clarifying questions to help them explore their emotions deeper. 
-            Keep responses concise (max 3 sentences) and warm.";
+            Keep responses concise (max 3 sentences) and warm.';
         }
 
         // Bridge mode = helping reformulate
@@ -102,8 +105,9 @@ class GeminiService
     protected function mockResponse(string $mode): string
     {
         if ($mode === 'vent') {
-            return "I hear you. It sounds really tough to deal with that. (This is a MOCK response because no API key was found. Please add GEMINI_API_KEY to .env)";
+            return 'I hear you. It sounds really tough to deal with that. (This is a MOCK response because no API key was found. Please add GEMINI_API_KEY to .env)';
         }
+
         return "Try saying: 'I feel overwhelmed when tasks stack up...' (This is a MOCK response because no API key was found).";
     }
 }

@@ -9,11 +9,17 @@ use Livewire\Component;
 class Room extends Component
 {
     public $messages;
+
     public $newMessage = '';
+
     public $couple;
+
     public $partner;
+
     public $loveButtons;
+
     public $remainingButtons;
+
     public $nextAvailableAt;
 
     public function mount()
@@ -33,7 +39,7 @@ class Room extends Component
 
     public function loadMessages()
     {
-        if (!$this->couple) {
+        if (! $this->couple) {
             return;
         }
 

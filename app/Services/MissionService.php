@@ -14,8 +14,7 @@ class MissionService
 {
     public function __construct(
         protected XpService $xpService
-    ) {
-    }
+    ) {}
 
     /**
      * Assign daily missions to a couple
@@ -38,7 +37,7 @@ class MissionService
         // Check if missions already assigned for this date bucket
         $existing = MissionAssignment::where('couple_id', $couple->id)
             ->whereDate('assigned_for_date', $date)
-            ->whereHas('mission', fn($query) => $query->where('type', $type))
+            ->whereHas('mission', fn ($query) => $query->where('type', $type))
             ->count();
 
         if ($existing >= $count) {
@@ -73,7 +72,7 @@ class MissionService
         ?string $notes = null
     ): MissionCompletion {
         // Verify user is in the couple
-        if (!$assignment->couple->users()->where('users.id', $user->id)->exists()) {
+        if (! $assignment->couple->users()->where('users.id', $user->id)->exists()) {
             throw new \Exception('User is not part of this couple.');
         }
 
@@ -133,7 +132,7 @@ class MissionService
     public function getTodayMissions(Couple $couple): Collection
     {
         return $this->getMissionsForCouple($couple, today())
-            ->filter(fn($assignment) => $assignment->status === 'pending');
+            ->filter(fn ($assignment) => $assignment->status === 'pending');
     }
 
     /**
@@ -143,7 +142,7 @@ class MissionService
     {
         // Verify partner is in the couple
         $couple = $completion->assignment->couple;
-        if (!$couple->users()->where('users.id', $partner->id)->exists()) {
+        if (! $couple->users()->where('users.id', $partner->id)->exists()) {
             throw new \Exception('User is not part of this couple.');
         }
 

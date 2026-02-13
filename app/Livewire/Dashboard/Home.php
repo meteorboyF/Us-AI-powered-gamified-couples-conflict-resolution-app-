@@ -2,21 +2,27 @@
 
 namespace App\Livewire\Dashboard;
 
-use Carbon\Carbon;
 use App\Models\Memory;
-use Livewire\Component;
 use App\Services\CoupleService;
 use App\Services\MissionService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Component;
 
 class Home extends Component
 {
     public $user;
+
     public $couple;
+
     public $partnerName;
+
     public $stats;
+
     public $dailyMission;
+
     public $dailyAssignmentId;
+
     public $missionCompleted = false;
 
     public function mount()
@@ -44,7 +50,7 @@ class Home extends Component
             'xp' => $world?->xp_total ?? 0,
             'level' => $world?->level ?? 1,
             'memories' => Memory::where('couple_id', $this->couple->id)->count(),
-            'streak' => $streak
+            'streak' => $streak,
         ];
     }
 
@@ -58,6 +64,7 @@ class Home extends Component
             $this->dailyAssignmentId = $assignment->id;
             $this->dailyMission = $assignment->mission;
             $this->missionCompleted = $assignment->status === 'completed';
+
             return;
         }
 
@@ -68,12 +75,13 @@ class Home extends Component
 
     public function completeMission()
     {
-        if (!$this->dailyAssignmentId || $this->missionCompleted)
+        if (! $this->dailyAssignmentId || $this->missionCompleted) {
             return;
+        }
 
         $missionService = app(MissionService::class);
         $assignment = \App\Models\MissionAssignment::find($this->dailyAssignmentId);
-        if (!$assignment) {
+        if (! $assignment) {
             return;
         }
 

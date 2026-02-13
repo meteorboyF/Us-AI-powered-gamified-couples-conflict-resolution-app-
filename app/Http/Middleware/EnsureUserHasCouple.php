@@ -19,7 +19,7 @@ class EnsureUserHasCouple
         $coupleService = app(CoupleService::class);
         $couple = $coupleService->getUserCouple($request->user());
 
-        if (!$couple) {
+        if (! $couple) {
             return redirect()->route('couple.create-or-join')
                 ->with('message', 'Please create or join a couple to continue.');
         }

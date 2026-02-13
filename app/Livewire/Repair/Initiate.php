@@ -9,7 +9,9 @@ use Livewire\Component;
 class Initiate extends Component
 {
     public $conflictTopic = '';
+
     public $couple;
+
     public $activeSession;
 
     public function mount()
@@ -39,6 +41,7 @@ class Initiate extends Component
             );
 
             session()->flash('message', 'Repair session started. Your partner has been notified.');
+
             return redirect()->route('repair.wizard', ['sessionId' => $session->id]);
 
         } catch (\Exception $e) {

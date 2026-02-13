@@ -5,15 +5,19 @@ namespace App\Livewire\Coach;
 use App\Models\AiChat;
 use App\Services\CoupleService;
 use App\Services\GeminiService;
-use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Component;
 
 class Chat extends Component
 {
     public $chat;
+
     public $messages = [];
+
     public $newMessage = '';
+
     public $mode = 'vent'; // 'vent' or 'bridge'
+
     public $isTyping = false;
 
     public function mount()
@@ -21,7 +25,7 @@ class Chat extends Component
         $user = Auth::user();
         $couple = app(CoupleService::class)->getUserCouple($user);
 
-        if (!$couple) {
+        if (! $couple) {
             return redirect()->route('dashboard');
         }
 
@@ -95,8 +99,9 @@ class Chat extends Component
 
     public function switchMode($newMode)
     {
-        if ($this->mode === $newMode)
+        if ($this->mode === $newMode) {
             return;
+        }
 
         $this->mode = $newMode;
 
@@ -108,7 +113,7 @@ class Chat extends Component
             'couple_id' => $this->chat->couple_id,
             'type' => $newMode,
             'messages' => [],
-            'is_active' => true
+            'is_active' => true,
         ]);
 
         $this->messages = [];

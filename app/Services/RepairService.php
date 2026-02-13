@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use App\Models\Couple;
 use App\Models\RepairAgreement;
 use App\Models\RepairSession;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 class RepairService
@@ -14,8 +14,7 @@ class RepairService
     public function __construct(
         protected XpService $xpService,
         protected NotificationService $notificationService
-    ) {
-    }
+    ) {}
 
     protected const SHARED_GOALS = [
         'communicate' => 'Communicate more openly',
@@ -74,11 +73,12 @@ class RepairService
     {
         $this->assertCoupleMember($session->couple, $user);
 
-        if (!$session->canBeJoined($user)) {
+        if (! $session->canBeJoined($user)) {
             throw new \Exception('You cannot join this repair session.');
         }
 
         $session->start();
+
         return $session;
     }
 
@@ -105,7 +105,7 @@ class RepairService
 
         // Validate goals
         foreach ($goals as $goal) {
-            if (!isset(self::SHARED_GOALS[$goal])) {
+            if (! isset(self::SHARED_GOALS[$goal])) {
                 throw new \InvalidArgumentException("Invalid goal: {$goal}");
             }
         }
@@ -192,7 +192,7 @@ class RepairService
             ->count();
 
         $partner = $session->getPartner();
-        if (!$partner) {
+        if (! $partner) {
             throw new \Exception('A partner must join before completing the repair.');
         }
         $partnerAgreements = $session->agreements()
@@ -228,7 +228,7 @@ class RepairService
                     $session->couple,
                     'repair_completed',
                     '✨ Repair Complete!',
-                    "You successfully completed a repair session together! +50 XP",
+                    'You successfully completed a repair session together! +50 XP',
                     ['session_id' => $session->id, 'xp_reward' => 50]
                 );
             }
@@ -325,7 +325,7 @@ class RepairService
 
     protected function assertCoupleMember(Couple $couple, User $user): void
     {
-        if (!$couple->isActive()) {
+        if (! $couple->isActive()) {
             throw new AuthorizationException('Unauthorized couple access.');
         }
 
@@ -334,7 +334,7 @@ class RepairService
             ->where('couple_user.is_active', true)
             ->exists();
 
-        if (!$isMember) {
+        if (! $isMember) {
             throw new AuthorizationException('Unauthorized couple access.');
         }
     }

@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Mission;
 use App\Models\MissionAssignment;
+use App\Models\User;
 use App\Services\CoupleService;
 use App\Services\MissionService;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

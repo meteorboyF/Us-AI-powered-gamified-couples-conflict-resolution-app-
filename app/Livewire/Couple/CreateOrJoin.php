@@ -8,8 +8,11 @@ use Livewire\Component;
 class CreateOrJoin extends Component
 {
     public $tab = 'create';
+
     public $selectedTheme = 'garden';
+
     public $inviteCode = null;
+
     public $joinCode = '';
 
     public function createCouple()
@@ -41,6 +44,7 @@ class CreateOrJoin extends Component
         try {
             $couple = $coupleService->joinCouple(auth()->user(), $this->joinCode);
             session()->flash('message', 'Successfully joined couple!');
+
             return redirect()->route('dashboard');
 
         } catch (\Exception $e) {

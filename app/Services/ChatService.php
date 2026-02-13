@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use Illuminate\Auth\Access\AuthorizationException;
 use App\Models\Couple;
 use App\Models\Message;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -14,8 +14,7 @@ class ChatService
     public function __construct(
         protected XpService $xpService,
         protected NotificationService $notificationService
-    ) {
-    }
+    ) {}
 
     protected const LOVE_BUTTONS = [
         'heart' => ['emoji' => '❤️', 'label' => 'Thinking of you', 'xp' => 5],
@@ -26,6 +25,7 @@ class ChatService
     ];
 
     protected const RATE_LIMIT_HOURS = 1;
+
     protected const MAX_LOVE_BUTTONS_PER_HOUR = 5;
 
     /**
@@ -71,11 +71,11 @@ class ChatService
     {
         $this->assertCoupleMember($couple, $user);
 
-        if (!isset(self::LOVE_BUTTONS[$buttonType])) {
+        if (! isset(self::LOVE_BUTTONS[$buttonType])) {
             throw new \InvalidArgumentException("Invalid love button type: {$buttonType}");
         }
 
-        if (!$this->canSendLoveButton($user)) {
+        if (! $this->canSendLoveButton($user)) {
             throw new \Exception('Love button rate limit exceeded. You can send 5 per hour.');
         }
 
@@ -212,7 +212,7 @@ class ChatService
 
     protected function assertCoupleMember(Couple $couple, User $user): void
     {
-        if (!$couple->isActive()) {
+        if (! $couple->isActive()) {
             throw new AuthorizationException('Unauthorized couple access.');
         }
 
@@ -221,7 +221,7 @@ class ChatService
             ->where('couple_user.is_active', true)
             ->exists();
 
-        if (!$isMember) {
+        if (! $isMember) {
             throw new AuthorizationException('Unauthorized couple access.');
         }
     }

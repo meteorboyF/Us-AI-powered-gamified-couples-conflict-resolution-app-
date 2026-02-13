@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Couple;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class CouplePolicy
 {
@@ -34,7 +33,7 @@ class CouplePolicy
     public function create(User $user): bool
     {
         // User can create a couple if they're not already in an active one
-        return !$user->couples()
+        return ! $user->couples()
             ->where('status', 'active')
             ->where('couple_user.is_active', true)
             ->exists();

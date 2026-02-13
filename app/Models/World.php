@@ -59,6 +59,7 @@ class World extends Model
         foreach (self::AMBIENCE_THRESHOLDS as $xpThreshold => $state) {
             if ($this->xp_total >= $xpThreshold) {
                 $this->ambience_state = $state;
+
                 return;
             }
         }
@@ -69,7 +70,7 @@ class World extends Model
         $cosmetics = $this->cosmetics ?? [];
 
         foreach (self::COSMETIC_UNLOCKS as $requiredLevel => $cosmetic) {
-            if ($this->level >= $requiredLevel && !in_array($cosmetic, $cosmetics, true)) {
+            if ($this->level >= $requiredLevel && ! in_array($cosmetic, $cosmetics, true)) {
                 $cosmetics[] = $cosmetic;
             }
         }

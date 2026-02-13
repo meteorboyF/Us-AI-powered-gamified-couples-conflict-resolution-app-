@@ -62,4 +62,3 @@ class XpWorldEngineTest extends TestCase
         $this->assertContains('starlit_sky', $world->cosmetics ?? []);
     }
 }
-

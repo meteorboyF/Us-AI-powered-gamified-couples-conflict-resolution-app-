@@ -9,13 +9,21 @@ use Livewire\Component;
 class Wizard extends Component
 {
     public $session;
+
     public $step = 1;
+
     public $myPerspective = '';
+
     public $partnerPerspective = '';
+
     public $selectedGoals = [];
+
     public $newAgreement = '';
+
     public $agreements;
+
     public $sharedGoals;
+
     public $isInitiator;
 
     public function mount($sessionId)
@@ -23,7 +31,7 @@ class Wizard extends Component
         $this->session = RepairSession::with(['agreements', 'initiator'])->findOrFail($sessionId);
 
         // Verify user is part of this couple
-        if (!$this->session->couple->users()->where('users.id', auth()->id())->exists()) {
+        if (! $this->session->couple->users()->where('users.id', auth()->id())->exists()) {
             abort(403);
         }
 
@@ -32,7 +40,7 @@ class Wizard extends Component
         $this->loadData();
 
         // If partner is joining for first time, mark as in_progress
-        if ($this->session->status === 'pending' && !$this->isInitiator) {
+        if ($this->session->status === 'pending' && ! $this->isInitiator) {
             $repairService = app(RepairService::class);
             $repairService->joinRepair($this->session, auth()->user());
             $this->session = $this->session->fresh();
@@ -161,6 +169,7 @@ class Wizard extends Component
         try {
             $repairService->completeRepair($this->session, auth()->user());
             session()->flash('message', 'Repair completed! +50 XP');
+
             return redirect()->route('dashboard');
 
         } catch (\Exception $e) {
@@ -174,6 +183,7 @@ class Wizard extends Component
         $repairService->abandonRepair($this->session, auth()->user());
 
         session()->flash('message', 'Repair session ended.');
+
         return redirect()->route('dashboard');
     }
 

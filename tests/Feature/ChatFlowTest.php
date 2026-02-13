@@ -70,4 +70,3 @@ class ChatFlowTest extends TestCase
         $vaultService->addReaction($memory, $outsider, 'heart');
     }
 }
-

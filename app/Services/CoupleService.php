@@ -5,8 +5,8 @@ namespace App\Services;
 use App\Models\Couple;
 use App\Models\User;
 use App\Models\World;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CoupleService
 {
