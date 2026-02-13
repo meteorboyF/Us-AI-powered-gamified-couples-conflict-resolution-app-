@@ -20,8 +20,7 @@ class VaultFlowTest extends TestCase
 
     public function test_photo_upload_stores_file_and_awards_first_upload_xp_once(): void
     {
-        Storage::fake('local');
-        config(['filesystems.default' => 'local']);
+        Storage::fake('public');
 
         $user = User::factory()->create();
         $couple = app(CoupleService::class)->createCouple($user);
@@ -44,7 +43,7 @@ class VaultFlowTest extends TestCase
         ]);
 
         $memory = Memory::where('couple_id', $couple->id)->firstOrFail();
-        Storage::disk('local')->assertExists($memory->file_path);
+        Storage::disk('public')->assertExists($memory->file_path);
     }
 
     public function test_private_memory_is_hidden_from_partner(): void

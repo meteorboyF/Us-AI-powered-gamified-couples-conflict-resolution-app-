@@ -37,6 +37,6 @@ class History extends Component
 
     public function render()
     {
-        return view('livewire.repair.history');
+        return view('livewire.repair.history')->layout('layouts.app');
     }
 }

@@ -58,6 +58,6 @@ class Board extends Component
 
     public function render()
     {
-        return view('livewire.mission.board');
+        return view('livewire.mission.board')->layout('layouts.app');
     }
 }

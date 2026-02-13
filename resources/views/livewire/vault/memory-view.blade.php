@@ -48,16 +48,32 @@
             <div class="p-8">
                 @if($canViewContent)
                     @if($memory->isPhoto())
-                        <img src="{{ $memory->getFileUrl() }}" alt="{{ $memory->title }}" class="w-full rounded-2xl shadow-lg">
+                        @if($memory->getFileUrl())
+                            <img src="{{ $memory->getFileUrl() }}" alt="{{ $memory->title }}" class="w-full rounded-2xl shadow-lg">
+                        @else
+                            <div class="bg-gray-100 rounded-2xl p-8 text-center text-gray-700">
+                                Memory file is unavailable.
+                            </div>
+                        @endif
                     @elseif($memory->isVideo())
-                        <video controls class="w-full rounded-2xl shadow-lg">
-                            <source src="{{ $memory->getFileUrl() }}" type="{{ $memory->mime_type }}">
-                        </video>
+                        @if($memory->getFileUrl())
+                            <video controls class="w-full rounded-2xl shadow-lg">
+                                <source src="{{ $memory->getFileUrl() }}" type="{{ $memory->mime_type }}">
+                            </video>
+                        @else
+                            <div class="bg-gray-100 rounded-2xl p-8 text-center text-gray-700">
+                                Memory file is unavailable.
+                            </div>
+                        @endif
                     @elseif($memory->isVoiceNote())
                         <div class="bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl p-12 text-center">
-                            <audio controls class="w-full">
-                                <source src="{{ $memory->getFileUrl() }}" type="{{ $memory->mime_type }}">
-                            </audio>
+                            @if($memory->getFileUrl())
+                                <audio controls class="w-full">
+                                    <source src="{{ $memory->getFileUrl() }}" type="{{ $memory->mime_type }}">
+                                </audio>
+                            @else
+                                <div class="text-gray-700">Memory file is unavailable.</div>
+                            @endif
                         </div>
                     @else
                         <div class="bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl p-8">

@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Storage;
 
 class Memory extends Model
 {
+    public const MEDIA_DISK = 'public';
+
     protected $fillable = [
         'couple_id',
         'created_by',
@@ -221,7 +223,13 @@ class Memory extends Model
             return null;
         }
 
-        return Storage::url($this->file_path);
+        $disk = Storage::disk(self::MEDIA_DISK);
+
+        if (! $disk->exists($this->file_path)) {
+            return null;
+        }
+
+        return $disk->url($this->file_path);
     }
 
     /**
@@ -233,7 +241,13 @@ class Memory extends Model
             return null;
         }
 
-        return Storage::url($this->thumbnail_path);
+        $disk = Storage::disk(self::MEDIA_DISK);
+
+        if (! $disk->exists($this->thumbnail_path)) {
+            return null;
+        }
+
+        return $disk->url($this->thumbnail_path);
     }
 
     /**

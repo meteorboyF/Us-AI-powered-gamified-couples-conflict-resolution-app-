@@ -100,7 +100,7 @@
 
             @if (session()->has('message'))
                 <div class="max-w-4xl mx-auto mt-6">
-                    <div class="p-6 bg-green-50 border-2 border-green-200 text-green-700 rounded-2xl text-center font-semibold text-lg animate-bounce-in">
+                    <div class="p-6 bg-green-50 border-2 border-green-200 text-green-700 rounded-2xl text-center font-semibold text-lg">
                         {{ session('message') }}
                     </div>
                 </div>
@@ -127,12 +127,3 @@
         </div>
     </div>
 </div>
-
-<style>
-    @keyframes bounce-in {
-        0% { opacity: 0; transform: scale(0.9); }
-        50% { transform: scale(1.05); }
-        100% { opacity: 1; transform: scale(1); }
-    }
-    .animate-bounce-in { animation: bounce-in 0.6s ease-out; }
-</style>

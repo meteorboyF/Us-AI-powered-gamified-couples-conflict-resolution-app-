@@ -144,7 +144,7 @@ class MemoryView extends Component
 
     public function render()
     {
-        return view('livewire.vault.memory-view');
+        return view('livewire.vault.memory-view')->layout('layouts.app');
     }
 
     protected function refreshUnlockState(): void

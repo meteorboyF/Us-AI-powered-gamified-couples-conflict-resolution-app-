@@ -18,6 +18,8 @@ class VaultService
 {
     public const DUAL_UNLOCK_TTL_MINUTES = 30;
 
+    public const MEDIA_DISK = 'public';
+
     public function __construct(
         protected XpService $xpService
     ) {}
@@ -212,10 +214,10 @@ class VaultService
         DB::transaction(function () use ($memory) {
             // Delete file if exists
             if ($memory->file_path) {
-                Storage::delete($memory->file_path);
+                Storage::disk(self::MEDIA_DISK)->delete($memory->file_path);
             }
             if ($memory->thumbnail_path) {
-                Storage::delete($memory->thumbnail_path);
+                Storage::disk(self::MEDIA_DISK)->delete($memory->thumbnail_path);
             }
 
             $memory->delete();
@@ -463,7 +465,7 @@ class VaultService
         $filename = Str::random(40).'.'.$file->getClientOriginalExtension();
         $path = "memories/{$coupleId}/{$type}/{$filename}";
 
-        Storage::putFileAs(
+        Storage::disk(self::MEDIA_DISK)->putFileAs(
             "memories/{$coupleId}/{$type}",
             $file,
             $filename

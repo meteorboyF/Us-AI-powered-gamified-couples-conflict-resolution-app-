@@ -108,19 +108,19 @@
                             <a href="/vault/memory/{{ $memory->id }}" class="block">
                                 @if($memory->isPhoto())
                                     <div class="aspect-square bg-gradient-to-br from-purple-100 to-pink-100 relative">
-                                        @if($isDualLocked)
-                                            <div class="w-full h-full flex items-center justify-center text-lg font-semibold text-yellow-700">Dual consent required</div>
-                                        @else
-                                            <img src="{{ $memory->getFileUrl() }}" alt="{{ $memory->title }}" class="w-full h-full object-cover">
-                                        @endif
+                                        <x-media.thumbnail :memory="$memory" :locked="$isDualLocked" />
                                     </div>
                                 @elseif($memory->isVideo())
                                     <div class="aspect-video bg-gradient-to-br from-purple-100 to-pink-100 relative flex items-center justify-center">
-                                        <div class="text-sm text-gray-700 font-semibold">{{ $isDualLocked ? 'Dual consent required' : 'Video memory' }}</div>
+                                        <div class="text-sm text-gray-700 font-semibold">
+                                            {{ $isDualLocked ? 'Dual consent required' : ($memory->getThumbnailUrl() || $memory->getFileUrl() ? 'Video memory' : 'Video unavailable') }}
+                                        </div>
                                     </div>
                                 @elseif($memory->isVoiceNote())
                                     <div class="aspect-video bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center relative">
-                                        <div class="text-sm text-gray-700 font-semibold">{{ $isDualLocked ? 'Dual consent required' : 'Voice memory' }}</div>
+                                        <div class="text-sm text-gray-700 font-semibold">
+                                            {{ $isDualLocked ? 'Dual consent required' : ($memory->getFileUrl() ? 'Voice memory' : 'Voice unavailable') }}
+                                        </div>
                                     </div>
                                 @else
                                     <div class="p-6 bg-gradient-to-br from-purple-100 to-pink-100 min-h-[200px] relative">
