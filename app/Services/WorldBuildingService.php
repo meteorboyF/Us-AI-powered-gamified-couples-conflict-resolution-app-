@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Couple;
 use App\Models\CoupleWallet;
+use App\Models\Memory;
 use App\Models\MissionCompletion;
 use App\Models\MoodCheckin;
 use App\Models\User;
@@ -191,6 +192,31 @@ class WorldBuildingService
         $item->save();
 
         return $item->fresh();
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
+    public function getMemoryFrameHighlight(Couple $couple, User $user): ?array
+    {
+        $this->authorizeWorldAccess($couple, $user);
+
+        $memory = Memory::where('couple_id', $couple->id)
+            ->where('visibility', 'shared')
+            ->where('comfort', true)
+            ->inRandomOrder()
+            ->first();
+
+        if (! $memory) {
+            return null;
+        }
+
+        return [
+            'id' => $memory->id,
+            'title' => $memory->title ?: 'Comfort memory',
+            'thumbnail_url' => $memory->getThumbnailUrl() ?: $memory->getFileUrl(),
+            'type' => $memory->type,
+        ];
     }
 
     /**

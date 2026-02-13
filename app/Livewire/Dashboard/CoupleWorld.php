@@ -45,6 +45,12 @@ class CoupleWorld extends Component
 
     public $checkinStreak = 0;
 
+    public $placementMode = false;
+
+    public $placementItemKey = null;
+
+    public $memoryFrameHighlight = null;
+
     public function mount()
     {
         $coupleService = app(CoupleService::class);
@@ -105,21 +111,76 @@ class CoupleWorld extends Component
         $this->dispatch('world-item-upgraded', itemKey: $upgradedItem);
     }
 
+    public function startPlacementMode(string $itemKey): void
+    {
+        if (! isset($this->items[$itemKey]) || ! ($this->items[$itemKey]['is_built'] ?? false)) {
+            return;
+        }
+
+        $this->placementMode = true;
+        $this->placementItemKey = $itemKey;
+        $this->closeUpgradeModal();
+    }
+
+    public function cancelPlacementMode(): void
+    {
+        $this->placementMode = false;
+        $this->placementItemKey = null;
+    }
+
+    public function placeSelectedItemAt(string $slot): void
+    {
+        if (! $this->placementMode || ! $this->placementItemKey || ! isset($this->slotPositions()[$slot])) {
+            return;
+        }
+
+        try {
+            app(WorldBuildingService::class)->placeItem(
+                $this->couple,
+                auth()->user(),
+                $this->placementItemKey,
+                $slot
+            );
+        } catch (ValidationException $exception) {
+            $messages = $exception->errors();
+            $message = collect($messages)->flatten()->first() ?? 'Unable to place this item.';
+            $this->addError('upgrade', $message);
+
+            return;
+        }
+
+        $placedItem = $this->placementItemKey;
+        $this->cancelPlacementMode();
+        $this->loadWorldState();
+        $this->dispatch('world-item-placed', itemKey: $placedItem);
+    }
+
     public function sceneSlotClass(string $itemKey): string
     {
-        $slots = [
-            'left-[8%] bottom-[16%]',
-            'left-[22%] bottom-[23%]',
-            'left-[34%] bottom-[12%]',
-            'left-[46%] bottom-[21%]',
-            'left-[58%] bottom-[13%]',
-            'left-[70%] bottom-[22%]',
-            'left-[82%] bottom-[16%]',
-        ];
+        $slots = array_values($this->slotPositions());
+        $itemState = $this->items[$itemKey] ?? null;
+        $savedSlot = $itemState['slot'] ?? null;
+        if ($savedSlot && isset($this->slotPositions()[$savedSlot])) {
+            return $this->slotPositions()[$savedSlot];
+        }
 
         $index = abs(crc32($itemKey)) % count($slots);
 
         return $slots[$index];
+    }
+
+    public function slotPositions(): array
+    {
+        return [
+            'slot_a' => 'left-[9%] bottom-[18%]',
+            'slot_b' => 'left-[22%] bottom-[25%]',
+            'slot_c' => 'left-[36%] bottom-[14%]',
+            'slot_d' => 'left-[49%] bottom-[24%]',
+            'slot_e' => 'left-[61%] bottom-[15%]',
+            'slot_f' => 'left-[73%] bottom-[24%]',
+            'slot_g' => 'left-[84%] bottom-[17%]',
+            'slot_h' => 'left-[43%] bottom-[35%]',
+        ];
     }
 
     public function nextCostFor(string $itemKey): ?array
@@ -239,6 +300,13 @@ class CoupleWorld extends Component
             fn ($query) => $query->where('couple_id', $this->couple->id)
         )->count();
         $this->checkinStreak = $this->calculateCheckinStreak();
+
+        $memoryFrameBuilt = collect($this->items)->contains(function (array $item, string $itemKey) {
+            return str_ends_with($itemKey, 'memory_frame') && ($item['level'] ?? 0) > 0;
+        });
+        $this->memoryFrameHighlight = $memoryFrameBuilt
+            ? app(WorldBuildingService::class)->getMemoryFrameHighlight($this->couple, auth()->user())
+            : null;
     }
 
     protected function calculateCheckinStreak(): int

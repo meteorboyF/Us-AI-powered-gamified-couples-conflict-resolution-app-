@@ -12,9 +12,22 @@
                 radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.2), transparent 50%),
                 linear-gradient(180deg, rgba(30, 41, 59, 0) 0%, rgba(15, 23, 42, 0.38) 100%);
         }
+
+        @keyframes itemPulse {
+            0% { transform: scale(1); }
+            45% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        .item-pulse {
+            animation: itemPulse 420ms ease-out;
+        }
     </style>
 
-    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8" x-data="{ driftX: 0, driftY: 0 }"
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
+        x-data="{ driftX: 0, driftY: 0, pulseKey: null, placementKey: null }"
+        x-on:world-item-upgraded.window="pulseKey = $event.detail.itemKey; setTimeout(() => pulseKey = null, 700)"
+        x-on:world-item-placed.window="placementKey = $event.detail.itemKey; setTimeout(() => placementKey = null, 700)"
         @mousemove="driftX = (($event.clientX / window.innerWidth) - 0.5) * 12; driftY = (($event.clientY / window.innerHeight) - 0.5) * 8">
         @if($couple && $world)
             <div class="mb-4 rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-sm sm:p-5">
@@ -35,6 +48,12 @@
                             class="rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white transition hover:bg-slate-700">
                             {{ $shopOpen ? 'Close Build Menu' : 'Open Build Menu' }}
                         </button>
+                        @if($placementMode && $placementItemKey)
+                            <button wire:click="cancelPlacementMode"
+                                class="rounded-xl bg-rose-100 px-4 py-2 font-semibold text-rose-700 transition hover:bg-rose-200">
+                                Cancel Placement
+                            </button>
+                        @endif
                     </div>
                 </div>
                 <div class="mt-4">
@@ -61,6 +80,14 @@
                     <div class="pointer-events-none absolute inset-x-0 bottom-0 h-[48%] world-ground"></div>
 
                     <div class="absolute inset-x-0 bottom-0 h-[52%]">
+                        @if($placementMode && $placementItemKey)
+                            @foreach($this->slotPositions() as $slotKey => $slotClass)
+                                <button wire:click="placeSelectedItemAt('{{ $slotKey }}')"
+                                    class="absolute {{ $slotClass }} h-9 w-9 rounded-full border-2 border-dashed border-white/80 bg-sky-300/30 shadow-lg transition hover:scale-110 hover:bg-sky-300/60"
+                                    title="Place here"></button>
+                            @endforeach
+                        @endif
+
                         @foreach($catalog as $itemKey => $definition)
                             @php
                                 $itemState = $items[$itemKey] ?? null;
@@ -71,7 +98,8 @@
 
                             @if($level > 0 || ($definition['starter'] ?? false))
                                 <button wire:click="openUpgradeModal('{{ $itemKey }}')"
-                                    class="group absolute {{ $this->sceneSlotClass($itemKey) }} w-28 rounded-2xl border border-white/30 bg-white/15 p-2 text-left text-white shadow-xl backdrop-blur transition hover:scale-105 hover:bg-white/25 sm:w-32">
+                                    class="group absolute {{ $this->sceneSlotClass($itemKey) }} w-28 rounded-2xl border border-white/30 bg-white/15 p-2 text-left text-white shadow-xl backdrop-blur transition hover:scale-105 hover:bg-white/25 sm:w-32"
+                                    :class="{ 'item-pulse': pulseKey === '{{ $itemKey }}' || placementKey === '{{ $itemKey }}' }">
                                     <p class="truncate text-xs font-semibold uppercase tracking-wide text-slate-100">{{ $definition['category'] }}</p>
                                     <p class="truncate text-sm font-semibold">{{ $definition['name'] }}</p>
                                     <p class="text-xs text-slate-100/85">Lv {{ $level }}</p>
@@ -96,6 +124,11 @@
                     <div class="absolute left-4 top-4 rounded-xl bg-black/25 px-3 py-2 text-xs font-medium text-white">
                         {{ ucfirst($world->resolvedWorldType()) }} world
                     </div>
+                    @if($placementMode && $placementItemKey)
+                        <div class="absolute right-4 top-4 rounded-xl bg-sky-100 px-3 py-2 text-xs font-semibold text-sky-800">
+                            Placement mode: choose a slot for {{ $catalog[$placementItemKey]['name'] ?? 'item' }}
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -216,6 +249,12 @@
                         @enderror
 
                         <div class="mt-5 flex items-center justify-end gap-2">
+                            @if($selectedLevel > 0)
+                                <button wire:click="startPlacementMode('{{ $selectedItemKey }}')"
+                                    class="rounded-xl bg-sky-100 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-200">
+                                    Move Item
+                                </button>
+                            @endif
                             <button wire:click="closeUpgradeModal"
                                 class="rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
                                 Cancel
@@ -224,6 +263,29 @@
                                 class="rounded-xl px-4 py-2 text-sm font-semibold text-white transition {{ ($locked || ! $selectedCost) ? 'cursor-not-allowed bg-slate-300' : 'bg-slate-900 hover:bg-slate-700' }}">
                                 Confirm Upgrade
                             </button>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if($memoryFrameHighlight)
+                <div class="mt-6 rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Memory Frame</p>
+                    <div class="mt-2 flex items-center gap-4">
+                        @if($memoryFrameHighlight['thumbnail_url'])
+                            <img src="{{ $memoryFrameHighlight['thumbnail_url'] }}" alt="Memory frame thumbnail"
+                                class="h-16 w-16 rounded-xl object-cover">
+                        @else
+                            <div class="flex h-16 w-16 items-center justify-center rounded-xl bg-slate-100 text-xs font-semibold text-slate-500">
+                                {{ strtoupper(substr($memoryFrameHighlight['type'], 0, 4)) }}
+                            </div>
+                        @endif
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900">{{ $memoryFrameHighlight['title'] }}</p>
+                            <a href="{{ route('vault.memory', ['memoryId' => $memoryFrameHighlight['id']]) }}"
+                                class="text-xs font-semibold text-sky-700 hover:text-sky-600">
+                                Open in vault
+                            </a>
                         </div>
                     </div>
                 </div>

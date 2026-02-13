@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Memory;
 use App\Models\Mission;
 use App\Models\MissionAssignment;
 use App\Models\MissionCompletion;
@@ -140,5 +141,53 @@ class WorldBuildingTest extends TestCase
             'item_key' => 'garden_picnic_set',
             'slot' => 'north_2',
         ]);
+    }
+
+    public function test_memory_frame_uses_only_shared_comfort_safe_items_and_respects_locks(): void
+    {
+        $owner = User::factory()->create();
+        $couple = app(CoupleService::class)->createCouple($owner, ['theme' => 'house']);
+        $worldBuilding = app(WorldBuildingService::class);
+
+        Memory::create([
+            'couple_id' => $couple->id,
+            'created_by' => $owner->id,
+            'type' => 'text',
+            'title' => 'Shared comfort memory',
+            'visibility' => 'shared',
+            'comfort' => true,
+        ]);
+
+        Memory::create([
+            'couple_id' => $couple->id,
+            'created_by' => $owner->id,
+            'type' => 'text',
+            'title' => 'Private memory',
+            'visibility' => 'private',
+            'comfort' => true,
+        ]);
+
+        Memory::create([
+            'couple_id' => $couple->id,
+            'created_by' => $owner->id,
+            'type' => 'text',
+            'title' => 'Locked memory',
+            'visibility' => 'locked',
+            'comfort' => true,
+        ]);
+
+        Memory::create([
+            'couple_id' => $couple->id,
+            'created_by' => $owner->id,
+            'type' => 'text',
+            'title' => 'Shared but not comfort',
+            'visibility' => 'shared',
+            'comfort' => false,
+        ]);
+
+        $highlight = $worldBuilding->getMemoryFrameHighlight($couple->fresh(), $owner);
+
+        $this->assertNotNull($highlight);
+        $this->assertSame('Shared comfort memory', $highlight['title']);
     }
 }
