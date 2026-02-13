@@ -6,6 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class World extends Model
 {
+    protected const AMBIENCE_THRESHOLDS = [
+        500 => 'quiet',
+        200 => 'calm',
+        0 => 'bright',
+    ];
+
+    protected const COSMETIC_UNLOCKS = [
+        3 => 'blooming_garden',
+        5 => 'starlit_sky',
+    ];
+
     protected $fillable = [
         'couple_id',
         'theme_type',
@@ -32,6 +43,8 @@ class World extends Model
     {
         $this->xp_total += $amount;
         $this->updateLevel();
+        $this->updateAmbienceState();
+        $this->unlockCosmeticsForLevel();
         $this->save();
     }
 
@@ -39,5 +52,28 @@ class World extends Model
     {
         // Simple leveling: every 100 XP = 1 level
         $this->level = floor($this->xp_total / 100) + 1;
+    }
+
+    protected function updateAmbienceState(): void
+    {
+        foreach (self::AMBIENCE_THRESHOLDS as $xpThreshold => $state) {
+            if ($this->xp_total >= $xpThreshold) {
+                $this->ambience_state = $state;
+                return;
+            }
+        }
+    }
+
+    protected function unlockCosmeticsForLevel(): void
+    {
+        $cosmetics = $this->cosmetics ?? [];
+
+        foreach (self::COSMETIC_UNLOCKS as $requiredLevel => $cosmetic) {
+            if ($this->level >= $requiredLevel && !in_array($cosmetic, $cosmetics, true)) {
+                $cosmetics[] = $cosmetic;
+            }
+        }
+
+        $this->cosmetics = $cosmetics;
     }
 }
