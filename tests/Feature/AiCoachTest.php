@@ -11,12 +11,79 @@ use App\Services\CoupleService;
 use App\Services\GeminiService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 class AiCoachTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_ai_coach_stores_assistant_reply_using_faked_gemini_response(): void
+    {
+        $user = User::factory()->create();
+        app(CoupleService::class)->createCouple($user);
+
+        config()->set('services.gemini.key', 'test-gemini-key');
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
+                    [
+                        'content' => [
+                            'parts' => [
+                                ['text' => 'Thanks for sharing that. What feels most urgent right now?'],
+                            ],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $this->actingAs($user);
+        Livewire::test(CoachChat::class)
+            ->set('newMessage', 'I feel ignored when plans change last minute.')
+            ->call('sendMessage')
+            ->call('generateResponse');
+
+        $chat = AiChat::query()
+            ->where('user_id', $user->id)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $this->assertTrue(collect($chat->messages)->contains(function ($message) {
+            return ($message['role'] ?? null) === 'assistant'
+                && str_contains(($message['content'] ?? ''), 'What feels most urgent right now?');
+        }));
+        Http::assertSentCount(1);
+    }
+
+    public function test_gemini_failure_triggers_fallback_response_and_friendly_ui_message(): void
+    {
+        $user = User::factory()->create();
+        app(CoupleService::class)->createCouple($user);
+
+        config()->set('services.gemini.key', 'test-gemini-key');
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::response(['error' => 'overloaded'], 503),
+        ]);
+
+        $this->actingAs($user);
+        $component = Livewire::test(CoachChat::class)
+            ->set('newMessage', 'I am really angry right now.')
+            ->call('sendMessage')
+            ->call('generateResponse')
+            ->assertSet('coachNotice', 'Coach had trouble reaching AI and switched to built-in support mode.');
+
+        $messages = $component->get('messages');
+        $assistantMessage = collect($messages)->reverse()->firstWhere('role', 'assistant');
+
+        $this->assertNotNull($assistantMessage);
+        $this->assertStringContainsString('feeling angry', $assistantMessage['content']);
+        Http::assertSentCount(3);
+    }
 
     public function test_user_gets_private_ai_chat_session_scoped_to_them(): void
     {
@@ -218,6 +285,28 @@ class AiCoachTest extends TestCase
         $this->assertCount(0, $component->get('bridgeSuggestions'));
     }
 
+    public function test_partner_cannot_read_private_venting_messages(): void
+    {
+        $user = User::factory()->create();
+        $partner = User::factory()->create();
+        $coupleService = app(CoupleService::class);
+        $couple = $coupleService->createCouple($user);
+        $coupleService->joinCouple($partner, $couple->invite_code);
+        $privateVent = 'PRIVATE VENT - this should never appear for partner';
+
+        $this->actingAs($user);
+        Livewire::test(CoachChat::class)
+            ->set('newMessage', $privateVent)
+            ->call('sendMessage');
+
+        $this->actingAs($partner);
+        $partnerMessages = Livewire::test(CoachChat::class)->get('messages');
+
+        $this->assertFalse(collect($partnerMessages)->contains(function ($message) use ($privateVent) {
+            return ($message['content'] ?? null) === $privateVent;
+        }));
+    }
+
     public function test_private_venting_content_is_not_stored_in_source_context(): void
     {
         $user = User::factory()->create();
@@ -235,5 +324,35 @@ class AiCoachTest extends TestCase
         $storedContext = json_encode($suggestion->source_context ?? []);
 
         $this->assertStringNotContainsString($rawVenting, $storedContext);
+    }
+
+    public function test_gemini_failure_logs_do_not_include_sensitive_message_content(): void
+    {
+        config()->set('services.gemini.key', 'test-gemini-key');
+        $sensitive = 'SENSITIVE_PRIVATE_VENT_123';
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::response([
+                'error' => [
+                    'message' => $sensitive,
+                ],
+            ], 500),
+        ]);
+
+        Log::spy();
+
+        $result = app(GeminiService::class)->coachReply([
+            ['role' => 'user', 'content' => $sensitive],
+        ], 'vent');
+
+        $this->assertTrue($result['used_fallback']);
+        Log::shouldHaveReceived('warning')
+            ->times(3)
+            ->withArgs(function ($message, $context) use ($sensitive) {
+                $serialized = json_encode($context);
+
+                return $message === 'Gemini chat attempt failed'
+                    && ! str_contains($serialized, $sensitive);
+            });
     }
 }

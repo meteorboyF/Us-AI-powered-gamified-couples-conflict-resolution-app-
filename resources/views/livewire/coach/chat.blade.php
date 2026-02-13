@@ -42,6 +42,12 @@
             </div>
         @endif
 
+        @if ($coachNotice)
+            <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                {{ $coachNotice }}
+            </div>
+        @endif
+
         <!-- Chat Area -->
         <div class="flex-1 overflow-y-auto mb-6 space-y-4 p-4 min-h-[50vh] max-h-[60vh] custom-scrollbar"
             id="chat-container">

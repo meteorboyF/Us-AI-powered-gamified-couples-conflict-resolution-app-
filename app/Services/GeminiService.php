@@ -11,22 +11,41 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class GeminiService
 {
     protected $apiKey;
 
-    protected $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+    protected string $baseUrl;
+
+    protected string $model;
+
+    protected int $timeoutSeconds = 10;
+
+    protected int $maxRetries = 2;
 
     public function __construct()
     {
         $this->apiKey = config('services.gemini.key');
+        $this->baseUrl = rtrim(config('services.gemini.endpoint', 'https://generativelanguage.googleapis.com/v1beta'), '/');
+        $this->model = config('services.gemini.model', 'gemini-1.5-flash');
     }
 
     /**
      * Send a request to the Gemini API.
      */
     public function chat(array $messages, string $mode = 'vent'): string
+    {
+        return $this->coachReply($messages, $mode)['text'];
+    }
+
+    /**
+     * Coach chat with retries and safe deterministic fallback.
+     *
+     * @return array{text: string, source: 'gemini'|'fallback', used_fallback: bool, notice: ?string}
+     */
+    public function coachReply(array $messages, string $mode = 'vent'): array
     {
         // Add system instruction based on mode
         $systemInstruction = $this->getSystemPrompt($mode);
@@ -56,30 +75,67 @@ class GeminiService
         }
 
         if (empty($this->apiKey)) {
-            return $this->mockResponse($mode);
+            return [
+                'text' => $this->fallbackCoachResponse($messages, $mode),
+                'source' => 'fallback',
+                'used_fallback' => true,
+                'notice' => 'Coach is currently using built-in support mode.',
+            ];
         }
 
-        try {
-            $response = Http::post($this->baseUrl.'?key='.$this->apiKey, [
-                'contents' => $contents,
-                'generationConfig' => [
-                    'temperature' => 0.7,
-                    'maxOutputTokens' => 500,
-                ],
-            ]);
+        $maxAttempts = $this->maxRetries + 1;
+        $url = "{$this->baseUrl}/models/{$this->model}:generateContent?key={$this->apiKey}";
 
-            if ($response->successful()) {
-                return $response->json('candidates.0.content.parts.0.text') ?? "I'm deep in thought but couldn't formulate a response.";
-            } else {
-                Log::error('Gemini API Error: '.$response->body());
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                $response = Http::timeout($this->timeoutSeconds)->post($url, [
+                    'contents' => $contents,
+                    'generationConfig' => [
+                        'temperature' => 0.7,
+                        'maxOutputTokens' => 500,
+                    ],
+                ]);
 
-                return "I'm having trouble connecting to my brain right now. Please try again later. (Error: ".$response->status().')';
+                if (! $response->successful()) {
+                    throw new \RuntimeException('gemini_http_'.$response->status());
+                }
+
+                $assistantText = $this->extractAssistantText($response->json());
+
+                if ($assistantText === null) {
+                    throw new \UnexpectedValueException('gemini_invalid_response_shape');
+                }
+
+                return [
+                    'text' => $assistantText,
+                    'source' => 'gemini',
+                    'used_fallback' => false,
+                    'notice' => null,
+                ];
+            } catch (Throwable $e) {
+                Log::warning('Gemini chat attempt failed', [
+                    'attempt' => $attempt,
+                    'max_attempts' => $maxAttempts,
+                    'mode' => $mode,
+                    'error_class' => get_class($e),
+                    'error_code' => $e->getCode(),
+                    'error_message' => $e->getMessage(),
+                ]);
+
+                if ($attempt < $maxAttempts) {
+                    $this->shortBackoff($attempt);
+
+                    continue;
+                }
             }
-        } catch (\Exception $e) {
-            Log::error('Gemini Connection Exception: '.$e->getMessage());
-
-            return 'Connection error. Please check your internet connection and try again.';
         }
+
+        return [
+            'text' => $this->fallbackCoachResponse($messages, $mode),
+            'source' => 'fallback',
+            'used_fallback' => true,
+            'notice' => 'Coach had trouble reaching AI and switched to built-in support mode.',
+        ];
     }
 
     /**
@@ -106,16 +162,95 @@ class GeminiService
         Keep responses concise and actionable.";
     }
 
-    /**
-     * Mock response for testing without API key.
-     */
-    protected function mockResponse(string $mode): string
+    protected function extractAssistantText($payload): ?string
     {
-        if ($mode === 'vent') {
-            return 'I hear you. It sounds really tough to deal with that. (This is a MOCK response because no API key was found. Please add GEMINI_API_KEY to .env)';
+        if (! is_array($payload)) {
+            return null;
         }
 
-        return "Try saying: 'I feel overwhelmed when tasks stack up...' (This is a MOCK response because no API key was found).";
+        $parts = data_get($payload, 'candidates.0.content.parts');
+
+        if (! is_array($parts)) {
+            return null;
+        }
+
+        $text = collect($parts)
+            ->map(fn ($part) => is_array($part) ? trim((string) ($part['text'] ?? '')) : '')
+            ->filter()
+            ->implode("\n");
+
+        return $text === '' ? null : $text;
+    }
+
+    protected function shortBackoff(int $attempt): void
+    {
+        // 150ms, 300ms for retries 1 and 2.
+        $delayMs = 150 * (2 ** ($attempt - 1));
+        usleep($delayMs * 1000);
+    }
+
+    protected function fallbackCoachResponse(array $messages, string $mode): string
+    {
+        $latestUserMessage = $this->latestUserMessage($messages);
+        $emotion = $this->inferEmotion($latestUserMessage);
+        $need = $this->inferNeed($latestUserMessage);
+
+        if ($mode === 'bridge') {
+            return "I hear how important this is to you, and you deserve to express it clearly.\n".
+                "What specific moment felt hardest for you?\n".
+                "Try: \"I feel {$emotion} when [specific situation] because I need {$need}. I would appreciate [clear request].\"\n".
+                'Repair step: start with one appreciation, then share one specific request.';
+        }
+
+        return "It makes sense that you are feeling {$emotion} right now.\n".
+            'What feels most important for your partner to understand first?\n'.
+            "If helpful, try: \"I feel {$emotion} when [situation] because I need {$need}.\"\n".
+            'Repair step: take a 10-minute reset, then return with one calm request.';
+    }
+
+    protected function latestUserMessage(array $messages): string
+    {
+        for ($i = count($messages) - 1; $i >= 0; $i--) {
+            if (($messages[$i]['role'] ?? null) === 'user') {
+                return (string) ($messages[$i]['content'] ?? '');
+            }
+        }
+
+        return '';
+    }
+
+    protected function inferEmotion(string $message): string
+    {
+        $lower = mb_strtolower($message);
+
+        if (str_contains($lower, 'angry') || str_contains($lower, 'mad') || str_contains($lower, 'furious')) {
+            return 'angry';
+        }
+        if (str_contains($lower, 'sad') || str_contains($lower, 'hurt') || str_contains($lower, 'cry')) {
+            return 'hurt';
+        }
+        if (str_contains($lower, 'anxious') || str_contains($lower, 'worried') || str_contains($lower, 'stress')) {
+            return 'overwhelmed';
+        }
+
+        return 'upset';
+    }
+
+    protected function inferNeed(string $message): string
+    {
+        $lower = mb_strtolower($message);
+
+        if (str_contains($lower, 'late') || str_contains($lower, 'plan')) {
+            return 'reliability';
+        }
+        if (str_contains($lower, 'ignore') || str_contains($lower, 'heard') || str_contains($lower, 'listen')) {
+            return 'to feel heard';
+        }
+        if (str_contains($lower, 'chores') || str_contains($lower, 'task')) {
+            return 'shared support';
+        }
+
+        return 'clarity and connection';
     }
 
     public function createDraftSuggestion(

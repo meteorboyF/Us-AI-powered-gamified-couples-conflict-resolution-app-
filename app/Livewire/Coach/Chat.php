@@ -23,6 +23,8 @@ class Chat extends Component
 
     public $bridgeSuggestions = [];
 
+    public ?string $coachNotice = null;
+
     public function mount()
     {
         $user = Auth::user();
@@ -79,8 +81,9 @@ class Chat extends Component
         // Filter history for API context (limit to last 10 messages for cost/efficiency)
         $context = array_slice($history, -10);
 
-        // Call AI
-        $response = $aiService->chat($context, $this->mode);
+        // Call AI with resilient fallback behavior.
+        $result = $aiService->coachReply($context, $this->mode);
+        $response = $result['text'];
 
         if ($this->mode === 'bridge') {
             $aiService->createDraftSuggestion(
@@ -97,6 +100,10 @@ class Chat extends Component
         } else {
             $this->addMessage('assistant', $response);
         }
+
+        $this->coachNotice = ($result['used_fallback'] ?? false)
+            ? ($result['notice'] ?? 'Coach is currently using built-in support mode.')
+            : null;
 
         $this->isTyping = false;
     }
