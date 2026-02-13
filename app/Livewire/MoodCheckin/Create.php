@@ -9,6 +9,7 @@ use Livewire\Component;
 
 class Create extends Component
 {
+    public $existingCheckin;
     public $moodLevel = 3;
     public $reasonTags = [];
     public $needs = [];
@@ -39,20 +40,25 @@ class Create extends Component
 
     public function mount()
     {
-        // Check if user already checked in today
         $couple = app(CoupleService::class)->getUserCouple(auth()->user());
 
-        if ($couple) {
-            $existing = MoodCheckin::where('couple_id', $couple->id)
-                ->where('user_id', auth()->id())
-                ->where('date', today()->toDateString())
-                ->first();
-
-            if ($existing) {
-                session()->flash('message', 'You\'ve already checked in today!');
-                return redirect()->route('dashboard');
-            }
+        if (!$couple) {
+            return;
         }
+
+        $this->existingCheckin = MoodCheckin::where('couple_id', $couple->id)
+            ->where('user_id', auth()->id())
+            ->where('date', today()->toDateString())
+            ->first();
+
+        if (!$this->existingCheckin) {
+            return;
+        }
+
+        $this->moodLevel = $this->existingCheckin->mood_level;
+        $this->reasonTags = $this->existingCheckin->reason_tags ?? [];
+        $this->needs = $this->existingCheckin->needs ?? [];
+        $this->note = $this->existingCheckin->note ?? '';
     }
 
     public function submit()
@@ -69,25 +75,28 @@ class Create extends Component
             return redirect()->route('dashboard');
         }
 
-        // Create mood check-in
-        MoodCheckin::create([
+        // Update today's check-in if it exists, otherwise create a new one.
+        $checkin = MoodCheckin::updateOrCreate([
             'couple_id' => $couple->id,
             'user_id' => auth()->id(),
             'date' => today(),
+        ], [
             'mood_level' => $this->moodLevel,
             'reason_tags' => $this->reasonTags,
             'needs' => $this->needs,
             'note' => $this->note,
         ]);
 
-        // Award XP
-        $xpService->awardXp(
-            $couple,
-            'checkin',
-            auth()->user(),
-            null,
-            ['mood_level' => $this->moodLevel]
-        );
+        if ($checkin->wasRecentlyCreated) {
+            // Award XP only on the first check-in of the day.
+            $xpService->awardXp(
+                $couple,
+                'checkin',
+                auth()->user(),
+                null,
+                ['mood_level' => $this->moodLevel]
+            );
+        }
 
         // Create mood alert notification if mood is low
         if ($this->moodLevel <= 2) {
@@ -100,7 +109,10 @@ class Create extends Component
             );
         }
 
-        session()->flash('message', 'Check-in complete! +10 XP');
+        $message = $checkin->wasRecentlyCreated
+            ? 'Check-in complete! +10 XP'
+            : 'Check-in updated for today.';
+        session()->flash('message', $message);
         return redirect()->route('dashboard');
     }
 
@@ -124,6 +136,6 @@ class Create extends Component
 
     public function render()
     {
-        return view('livewire.mood-checkin.create');
+        return view('livewire.mood-checkin.create')->layout('layouts.app');
     }
 }

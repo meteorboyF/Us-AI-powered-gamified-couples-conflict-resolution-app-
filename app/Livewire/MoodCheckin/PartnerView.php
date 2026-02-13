@@ -19,20 +19,28 @@ class PartnerView extends Component
             // Get partner's user ID
             $partnerId = $couple->users()
                 ->where('users.id', '!=', auth()->id())
-                ->first()?->id;
+                ->where('couple_user.is_active', true)
+                ->value('users.id');
 
             if ($partnerId) {
-                // Get partner's mood check-in for today
-                $this->partnerMood = MoodCheckin::where('couple_id', $couple->id)
+                $checkin = MoodCheckin::where('couple_id', $couple->id)
                     ->where('user_id', $partnerId)
-                    ->where('date', today()->toDateString())
+                    ->whereDate('date', today())
                     ->first();
+
+                if ($checkin) {
+                    $this->partnerMood = [
+                        'mood_level' => $checkin->mood_level,
+                        'needs' => $checkin->needs ?? [],
+                        'checked_in_at' => $checkin->created_at?->diffForHumans(),
+                    ];
+                }
             }
         }
     }
 
     public function render()
     {
-        return view('livewire.mood-checkin.partner-view');
+        return view('livewire.mood-checkin.partner-view')->layout('layouts.app');
     }
 }

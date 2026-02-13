@@ -100,26 +100,25 @@
             </div>
         </div>
     </div>
+    <style>
+        @keyframes bounce-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .animate-bounce-in {
+            animation: bounce-in 0.6s ease-out;
+        }
+    </style>
 </div>
-
-<style>
-    @keyframes bounce-in {
-        0% {
-            opacity: 0;
-            transform: scale(0.9);
-        }
-
-        50% {
-            transform: scale(1.05);
-        }
-
-        100% {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-
-    .animate-bounce-in {
-        animation: bounce-in 0.6s ease-out;
-    }
-</style>
