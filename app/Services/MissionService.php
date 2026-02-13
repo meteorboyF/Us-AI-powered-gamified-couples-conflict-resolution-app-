@@ -22,20 +22,32 @@ class MissionService
      */
     public function assignDailyMissions(Couple $couple, int $count = 3): Collection
     {
-        $today = today();
+        return $this->assignMissionsForDate($couple, 'daily', today(), $count);
+    }
 
-        // Check if missions already assigned for today
+    /**
+     * Assign weekly missions to a couple.
+     */
+    public function assignWeeklyMissions(Couple $couple, int $count = 2): Collection
+    {
+        return $this->assignMissionsForDate($couple, 'weekly', today()->startOfWeek(), $count);
+    }
+
+    protected function assignMissionsForDate(Couple $couple, string $type, \DateTimeInterface $date, int $count): Collection
+    {
+        // Check if missions already assigned for this date bucket
         $existing = MissionAssignment::where('couple_id', $couple->id)
-            ->whereDate('assigned_for_date', $today)
+            ->whereDate('assigned_for_date', $date)
+            ->whereHas('mission', fn($query) => $query->where('type', $type))
             ->count();
 
         if ($existing >= $count) {
-            return $this->getMissionsForCouple($couple, $today);
+            return $this->getMissionsForCouple($couple, $date);
         }
 
-        // Get random daily missions
+        // Get random active missions for the period.
         $missions = Mission::active()
-            ->ofType('daily')
+            ->ofType($type)
             ->inRandomOrder()
             ->limit($count - $existing)
             ->get();
@@ -45,11 +57,11 @@ class MissionService
             MissionAssignment::firstOrCreate([
                 'couple_id' => $couple->id,
                 'mission_id' => $mission->id,
-                'assigned_for_date' => $today,
+                'assigned_for_date' => $date,
             ]);
         }
 
-        return $this->getMissionsForCouple($couple, $today);
+        return $this->getMissionsForCouple($couple, $date);
     }
 
     /**
