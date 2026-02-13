@@ -45,5 +45,8 @@ Route::middleware([
 
         // AI Coach
         Route::get('/coach', \App\Livewire\Coach\Chat::class)->name('coach.chat');
+
+        // Gifts
+        Route::get('/gifts', \App\Livewire\Gifts\Index::class)->name('gifts.index');
     });
 });

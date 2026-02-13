@@ -44,6 +44,16 @@ class Couple extends Model
         return $this->hasMany(MoodCheckin::class);
     }
 
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function giftSuggestions()
+    {
+        return $this->hasMany(GiftSuggestion::class);
+    }
+
     // Helper methods
     public function generateInviteCode(): string
     {

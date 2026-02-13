@@ -88,4 +88,14 @@ class User extends Authenticatable
             ->where('couple_user.is_active', true)
             ->first();
     }
+
+    public function wishlist()
+    {
+        return $this->hasOne(Wishlist::class);
+    }
+
+    public function requestedGiftSuggestions()
+    {
+        return $this->hasMany(GiftSuggestion::class, 'requested_by');
+    }
 }

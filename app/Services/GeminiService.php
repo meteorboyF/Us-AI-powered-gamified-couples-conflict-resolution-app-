@@ -47,9 +47,16 @@ class GeminiService
      */
     public function coachReply(array $messages, string $mode = 'vent'): array
     {
-        // Add system instruction based on mode
-        $systemInstruction = $this->getSystemPrompt($mode);
+        return $this->generateWithSystemInstruction($messages, $this->getSystemPrompt($mode), $mode);
+    }
 
+    /**
+     * Generic Gemini call for text output using a custom system instruction.
+     *
+     * @return array{text: string, source: 'gemini'|'fallback', used_fallback: bool, notice: ?string}
+     */
+    public function generateWithSystemInstruction(array $messages, string $systemInstruction, string $fallbackMode = 'vent'): array
+    {
         // Transform messages for Gemini format
         $contents = [];
 
@@ -76,7 +83,7 @@ class GeminiService
 
         if (empty($this->apiKey)) {
             return [
-                'text' => $this->fallbackCoachResponse($messages, $mode),
+                'text' => $this->fallbackCoachResponse($messages, $fallbackMode),
                 'source' => 'fallback',
                 'used_fallback' => true,
                 'notice' => 'Coach is currently using built-in support mode.',
@@ -116,7 +123,7 @@ class GeminiService
                 Log::warning('Gemini chat attempt failed', [
                     'attempt' => $attempt,
                     'max_attempts' => $maxAttempts,
-                    'mode' => $mode,
+                    'mode' => $fallbackMode,
                     'error_class' => get_class($e),
                     'error_code' => $e->getCode(),
                     'error_message' => $e->getMessage(),
@@ -131,7 +138,7 @@ class GeminiService
         }
 
         return [
-            'text' => $this->fallbackCoachResponse($messages, $mode),
+            'text' => $this->fallbackCoachResponse($messages, $fallbackMode),
             'source' => 'fallback',
             'used_fallback' => true,
             'notice' => 'Coach had trouble reaching AI and switched to built-in support mode.',
