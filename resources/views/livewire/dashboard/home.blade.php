@@ -9,7 +9,7 @@
             <p class="text-gray-600 mt-2">
                 @if($couple)
                     Building a stronger bond with <span
-                        class="font-semibold text-purple-600">{{ $couple->partner ? $couple->partner->name : 'your partner' }}</span>.
+                        class="font-semibold text-purple-600">{{ $partnerName ?: 'your partner' }}</span>.
                 @else
                     Let's get you connected to your partner.
                 @endif
@@ -20,7 +20,7 @@
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 text-center">
                 <h3 class="text-lg font-bold text-gray-800">Partner Connection Needed</h3>
                 <p class="mb-4">You need to link with your partner to use the dashboard features.</p>
-                @livewire('couple.onboarding')
+                @livewire('couple.create-or-join')
             </div>
         @else
 

@@ -2,27 +2,32 @@
 
 namespace App\Livewire\Dashboard;
 
-use Livewire\Component;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Mission;
-use App\Models\MissionCompletion;
-use App\Models\Memory;
 use Carbon\Carbon;
+use App\Models\Memory;
+use Livewire\Component;
+use App\Services\CoupleService;
+use App\Services\MissionService;
+use Illuminate\Support\Facades\Auth;
 
 class Home extends Component
 {
     public $user;
     public $couple;
+    public $partnerName;
     public $stats;
     public $dailyMission;
+    public $dailyAssignmentId;
     public $missionCompleted = false;
 
     public function mount()
     {
         $this->user = Auth::user();
-        $this->couple = $this->user->couple;
+        $this->couple = app(CoupleService::class)->getUserCouple($this->user);
 
         if ($this->couple) {
+            $this->partnerName = $this->couple->users()
+                ->where('users.id', '!=', $this->user->id)
+                ->value('name');
             $this->loadStats();
             $this->loadDailyMission();
         }
@@ -34,9 +39,10 @@ class Home extends Component
         // For MVP, we'll just check consecutive days of login or mission completion
         $streak = 3; // Placeholder or calculate from tracking table
 
+        $world = $this->couple->world;
         $this->stats = [
-            'xp' => $this->couple->current_xp,
-            'level' => $this->couple->level,
+            'xp' => $world?->xp_total ?? 0,
+            'level' => $world?->level ?? 1,
             'memories' => Memory::where('couple_id', $this->couple->id)->count(),
             'streak' => $streak
         ];
@@ -44,35 +50,34 @@ class Home extends Component
 
     public function loadDailyMission()
     {
-        // Get a random mission for today if not already assigned/completed
-        // For MVP, just pick one random active mission
-        $this->dailyMission = Mission::inRandomOrder()->first();
+        $missionService = app(MissionService::class);
+        $missionService->assignDailyMissions($this->couple);
 
-        if ($this->dailyMission) {
-            $today = Carbon::today();
-            $completion = MissionCompletion::where('couple_id', $this->couple->id)
-                ->where('mission_id', $this->dailyMission->id)
-                ->whereDate('completed_at', $today)
-                ->first();
-
-            $this->missionCompleted = !is_null($completion);
+        $assignment = $missionService->getMissionsForCouple($this->couple, Carbon::today())->first();
+        if ($assignment) {
+            $this->dailyAssignmentId = $assignment->id;
+            $this->dailyMission = $assignment->mission;
+            $this->missionCompleted = $assignment->status === 'completed';
+            return;
         }
+
+        $this->dailyAssignmentId = null;
+        $this->dailyMission = null;
+        $this->missionCompleted = false;
     }
 
     public function completeMission()
     {
-        if (!$this->dailyMission || $this->missionCompleted)
+        if (!$this->dailyAssignmentId || $this->missionCompleted)
             return;
 
-        MissionCompletion::create([
-            'couple_id' => $this->couple->id,
-            'user_id' => $this->user->id,
-            'mission_id' => $this->dailyMission->id,
-            'completed_at' => now(),
-            'xp_earned' => $this->dailyMission->xp_reward
-        ]);
+        $missionService = app(MissionService::class);
+        $assignment = \App\Models\MissionAssignment::find($this->dailyAssignmentId);
+        if (!$assignment) {
+            return;
+        }
 
-        $this->couple->increment('current_xp', $this->dailyMission->xp_reward);
+        $missionService->completeMission($assignment, $this->user);
         $this->missionCompleted = true;
         $this->dispatch('xp-updated'); // trigger confetti if we had it
         $this->loadStats();
@@ -80,6 +85,6 @@ class Home extends Component
 
     public function render()
     {
-        return view('livewire.dashboard.home');
+        return view('livewire.dashboard.home')->layout('layouts.app');
     }
 }
