@@ -9,7 +9,9 @@ use Livewire\Component;
 class History extends Component
 {
     public $sessions;
+
     public $selectedSession;
+
     public $couple;
 
     public function mount()

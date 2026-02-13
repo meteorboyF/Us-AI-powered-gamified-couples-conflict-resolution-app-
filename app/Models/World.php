@@ -20,6 +20,7 @@ class World extends Model
     protected $fillable = [
         'couple_id',
         'theme_type',
+        'world_type',
         'level',
         'xp_total',
         'ambience_state',
@@ -38,6 +39,11 @@ class World extends Model
         return $this->belongsTo(Couple::class);
     }
 
+    public function resolvedWorldType(): string
+    {
+        return $this->world_type ?: ($this->theme_type ?: 'garden');
+    }
+
     // Helper methods
     public function addXp(int $amount): void
     {
@@ -45,6 +51,22 @@ class World extends Model
         $this->updateLevel();
         $this->updateAmbienceState();
         $this->unlockCosmeticsForLevel();
+        $this->save();
+    }
+
+    public function spendXp(int $amount): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+
+        if ($this->xp_total < $amount) {
+            throw new \InvalidArgumentException('Insufficient XP for this upgrade.');
+        }
+
+        $this->xp_total -= $amount;
+        $this->updateLevel();
+        $this->updateAmbienceState();
         $this->save();
     }
 

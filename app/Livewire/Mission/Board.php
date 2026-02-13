@@ -9,6 +9,7 @@ use Livewire\Component;
 class Board extends Component
 {
     public $missions;
+
     public $couple;
 
     public function mount()
@@ -35,6 +36,7 @@ class Board extends Component
             // Authorize
             if ($assignment->couple_id !== $this->couple->id) {
                 session()->flash('error', 'Unauthorized.');
+
                 return;
             }
 

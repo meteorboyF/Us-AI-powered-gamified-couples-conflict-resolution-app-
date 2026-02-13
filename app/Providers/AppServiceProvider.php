@@ -4,8 +4,12 @@ namespace App\Providers;
 
 use App\Models\AiBridgeSuggestion;
 use App\Models\Memory;
+use App\Models\World;
+use App\Models\WorldItem;
 use App\Policies\AiBridgeSuggestionPolicy;
 use App\Policies\MemoryPolicy;
+use App\Policies\WorldItemPolicy;
+use App\Policies\WorldPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,5 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Memory::class, MemoryPolicy::class);
         Gate::policy(AiBridgeSuggestion::class, AiBridgeSuggestionPolicy::class);
+        Gate::policy(World::class, WorldPolicy::class);
+        Gate::policy(WorldItem::class, WorldItemPolicy::class);
     }
 }

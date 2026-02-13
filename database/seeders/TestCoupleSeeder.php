@@ -10,6 +10,7 @@ use App\Models\MissionCompletion;
 use App\Models\RepairAgreement;
 use App\Models\RepairSession;
 use App\Models\User;
+use App\Services\WorldBuildingService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -59,11 +60,14 @@ class TestCoupleSeeder extends Seeder
 
         // 4. Create World (XP System)
         if (! $couple->world) {
-            $couple->world()->create([
+            $world = $couple->world()->create([
+                'theme_type' => 'garden',
+                'world_type' => 'garden',
                 'level' => 3,
                 'xp_total' => 450,
                 'ambience_state' => 'sunset',
             ]);
+            app(WorldBuildingService::class)->initializeStarterState($couple, $world);
         }
 
         // 5. Seed Missions and Completions

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Couple;
+use App\Models\CoupleWallet;
 use App\Models\User;
 use App\Models\XpEvent;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,14 @@ class XpService
         'repair' => 50,
         'vault' => 15,
         'chat' => 5,
+    ];
+
+    protected const LOVE_SEED_REWARDS = [
+        'checkin' => 3,
+        'mission' => 5,
+        'repair' => 12,
+        'vault' => 4,
+        'chat' => 1,
     ];
 
     /**
@@ -53,6 +62,13 @@ class XpService
             if ($world) {
                 $world->addXp($xpAmount);
             }
+
+            $wallet = CoupleWallet::firstOrCreate(
+                ['couple_id' => $couple->id],
+                ['love_seeds_balance' => config('world.starting_love_seeds', 0)]
+            );
+
+            $wallet->increment('love_seeds_balance', self::LOVE_SEED_REWARDS[$type] ?? 0);
 
             return $event;
         });

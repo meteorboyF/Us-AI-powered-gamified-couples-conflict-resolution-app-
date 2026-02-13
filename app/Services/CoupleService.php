@@ -86,14 +86,21 @@ class CoupleService
      */
     protected function createWorld(Couple $couple, array $preferences = []): World
     {
-        return World::create([
+        $worldType = $preferences['theme'] ?? 'garden';
+
+        $world = World::create([
             'couple_id' => $couple->id,
-            'theme_type' => $preferences['theme'] ?? 'garden',
+            'theme_type' => $worldType,
+            'world_type' => $worldType,
             'level' => 1,
             'xp_total' => 0,
             'ambience_state' => 'bright',
             'cosmetics' => [],
         ]);
+
+        app(WorldBuildingService::class)->initializeStarterState($couple, $world);
+
+        return $world;
     }
 
     /**

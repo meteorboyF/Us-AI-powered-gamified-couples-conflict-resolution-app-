@@ -10,6 +10,7 @@ use App\Models\MissionAssignment;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\World;
+use App\Services\WorldBuildingService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -54,16 +55,18 @@ class DemoSeeder extends Seeder
             ]);
         }
 
-        World::updateOrCreate(
+        $world = World::updateOrCreate(
             ['couple_id' => $couple->id],
             [
                 'theme_type' => 'garden',
+                'world_type' => 'garden',
                 'level' => 4,
                 'xp_total' => 360,
                 'ambience_state' => 'calm',
                 'cosmetics' => ['blooming_garden'],
             ]
         );
+        app(WorldBuildingService::class)->initializeStarterState($couple, $world);
 
         $dailyMission = Mission::firstOrCreate(
             ['title' => 'Two-minute check-in'],

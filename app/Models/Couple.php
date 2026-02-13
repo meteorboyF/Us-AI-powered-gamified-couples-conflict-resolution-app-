@@ -34,6 +34,16 @@ class Couple extends Model
         return $this->hasOne(World::class);
     }
 
+    public function worldItems()
+    {
+        return $this->hasMany(WorldItem::class);
+    }
+
+    public function wallet()
+    {
+        return $this->hasOne(CoupleWallet::class);
+    }
+
     public function xpEvents()
     {
         return $this->hasMany(XpEvent::class);
