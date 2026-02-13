@@ -36,11 +36,15 @@ class Suggestions extends Component
     public function generate(GiftSuggestionService $service): void
     {
         $suggestion = $service->generateForUser(auth()->user());
+        $meta = $service->getLastGenerationMeta();
 
         $this->cards = $suggestion->suggestions ?? [];
         $this->source = $suggestion->source;
         $this->statusMessage = $suggestion->source === 'fallback'
-            ? 'AI was unavailable, so we used safe built-in suggestions.'
+            ? $this->formatFallbackNotice(
+                'AI is busy right now, showing a safe fallback suggestion.',
+                $meta['correlation_id'] ?? null
+            )
             : 'Fresh suggestions are ready.';
 
         $this->mount(app(CoupleService::class));
@@ -49,5 +53,14 @@ class Suggestions extends Component
     public function render()
     {
         return view('livewire.gifts.suggestions');
+    }
+
+    protected function formatFallbackNotice(string $message, ?string $correlationId): string
+    {
+        if (! config('app.debug') || empty($correlationId)) {
+            return $message;
+        }
+
+        return $message.' Ref: '.$correlationId;
     }
 }

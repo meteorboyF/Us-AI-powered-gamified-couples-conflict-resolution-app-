@@ -11,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class VaultFlowTest extends TestCase
@@ -228,5 +229,26 @@ class VaultFlowTest extends TestCase
         } catch (AuthorizationException $e) {
             $this->assertStringContainsString('Unauthorized couple access.', $e->getMessage());
         }
+    }
+
+    public function test_upload_failure_shows_friendly_message_without_throwing(): void
+    {
+        $user = User::factory()->create();
+        app(CoupleService::class)->createCouple($user);
+
+        $this->mock(VaultService::class, function ($mock) {
+            $mock->shouldReceive('createTextMemory')
+                ->once()
+                ->andThrow(new \RuntimeException('internal failure'));
+        });
+
+        $this->actingAs($user);
+
+        Livewire::test(\App\Livewire\Vault\Upload::class)
+            ->set('uploadType', 'text')
+            ->set('description', 'A small memory')
+            ->set('visibility', 'shared')
+            ->call('save')
+            ->assertSee('Upload failed, please try again.');
     }
 }

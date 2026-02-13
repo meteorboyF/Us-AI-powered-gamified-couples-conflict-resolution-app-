@@ -144,6 +144,10 @@ class GiftsFeatureTest extends TestCase
         $this->assertArrayHasKey('category', $cards[0]);
         $this->assertArrayHasKey('description', $cards[0]);
         $this->assertArrayHasKey('why_it_fits', $cards[0]);
+        $this->assertStringStartsWith(
+            'AI is busy right now, showing a safe fallback suggestion.',
+            (string) $component->get('statusMessage')
+        );
         Http::assertSentCount(3);
     }
 

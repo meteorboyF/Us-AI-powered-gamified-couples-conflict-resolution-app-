@@ -74,8 +74,12 @@ class AiCoachTest extends TestCase
         $component = Livewire::test(CoachChat::class)
             ->set('newMessage', 'I am really angry right now.')
             ->call('sendMessage')
-            ->call('generateResponse')
-            ->assertSet('coachNotice', 'Coach had trouble reaching AI and switched to built-in support mode.');
+            ->call('generateResponse');
+
+        $this->assertStringStartsWith(
+            'AI is busy right now, showing a safe fallback suggestion.',
+            (string) $component->get('coachNotice')
+        );
 
         $messages = $component->get('messages');
         $assistantMessage = collect($messages)->reverse()->firstWhere('role', 'assistant');

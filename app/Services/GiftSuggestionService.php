@@ -8,9 +8,16 @@ use App\Models\Wishlist;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class GiftSuggestionService
 {
+    protected array $lastGenerationMeta = [
+        'source' => 'fallback',
+        'correlation_id' => null,
+        'failure_type' => null,
+    ];
+
     protected const CATEGORIES = [
         'low-effort',
         'experience',
@@ -26,6 +33,12 @@ class GiftSuggestionService
 
     public function generateForUser(User $requester): GiftSuggestion
     {
+        $this->lastGenerationMeta = [
+            'source' => 'fallback',
+            'correlation_id' => null,
+            'failure_type' => null,
+        ];
+
         $couple = $this->coupleService->getUserCouple($requester);
 
         if (! $couple) {
@@ -60,6 +73,12 @@ class GiftSuggestionService
         $geminiSuggestions = $this->generateWithGemini($snapshot);
 
         if ($geminiSuggestions !== null) {
+            $this->lastGenerationMeta = [
+                'source' => 'gemini',
+                'correlation_id' => null,
+                'failure_type' => null,
+            ];
+
             return GiftSuggestion::create([
                 'couple_id' => $couple->id,
                 'requested_by' => $requester->id,
@@ -82,6 +101,11 @@ class GiftSuggestionService
         ]);
     }
 
+    public function getLastGenerationMeta(): array
+    {
+        return $this->lastGenerationMeta;
+    }
+
     protected function generateWithGemini(array $snapshot): ?array
     {
         $systemInstruction = 'You are a couples gift/date suggestion assistant. Return JSON only. Do not diagnose, do not include therapy claims, and avoid explicit or manipulative content.';
@@ -94,9 +118,15 @@ class GiftSuggestionService
 
         $firstAttempt = $this->geminiService->generateWithSystemInstruction([
             ['role' => 'user', 'content' => $basePrompt],
-        ], $systemInstruction, 'bridge');
+        ], $systemInstruction, 'bridge', 'gifts');
 
         if (($firstAttempt['source'] ?? 'fallback') !== 'gemini') {
+            $this->lastGenerationMeta = [
+                'source' => 'fallback',
+                'correlation_id' => $firstAttempt['correlation_id'] ?? null,
+                'failure_type' => $firstAttempt['failure_type'] ?? 'unknown',
+            ];
+
             return null;
         }
 
@@ -108,9 +138,15 @@ class GiftSuggestionService
         $retryPrompt = $basePrompt.' Return valid JSON only. Do not include markdown fences.';
         $secondAttempt = $this->geminiService->generateWithSystemInstruction([
             ['role' => 'user', 'content' => $retryPrompt],
-        ], $systemInstruction, 'bridge');
+        ], $systemInstruction, 'bridge', 'gifts');
 
         if (($secondAttempt['source'] ?? 'fallback') !== 'gemini') {
+            $this->lastGenerationMeta = [
+                'source' => 'fallback',
+                'correlation_id' => $secondAttempt['correlation_id'] ?? null,
+                'failure_type' => $secondAttempt['failure_type'] ?? 'unknown',
+            ];
+
             return null;
         }
 
@@ -119,9 +155,23 @@ class GiftSuggestionService
             return $retryParsed;
         }
 
+        $correlationId = (string) Str::uuid();
         Log::warning('Gemini gift suggestions returned invalid JSON structure', [
+            'request_mode' => 'gifts',
+            'failure_type' => 'parse',
+            'correlation_id' => $correlationId,
             'has_text' => ! empty($secondAttempt['text'] ?? ''),
         ]);
+        Log::info('Gemini fallback used', [
+            'request_mode' => 'gifts',
+            'failure_type' => 'parse',
+            'correlation_id' => $correlationId,
+        ]);
+        $this->lastGenerationMeta = [
+            'source' => 'fallback',
+            'correlation_id' => $correlationId,
+            'failure_type' => 'parse',
+        ];
 
         return null;
     }

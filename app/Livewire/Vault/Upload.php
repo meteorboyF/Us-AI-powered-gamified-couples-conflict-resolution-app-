@@ -4,6 +4,8 @@ namespace App\Livewire\Vault;
 
 use App\Services\CoupleService;
 use App\Services\VaultService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -81,7 +83,20 @@ class Upload extends Component
             return redirect()->route('vault.gallery');
 
         } catch (\Exception $e) {
-            session()->flash('error', $e->getMessage());
+            $correlationId = (string) Str::uuid();
+            Log::warning('Vault upload failed', [
+                'request_mode' => 'upload',
+                'upload_type' => $this->uploadType,
+                'correlation_id' => $correlationId,
+                'error_class' => get_class($e),
+            ]);
+
+            $message = 'Upload failed, please try again.';
+            if (config('app.debug')) {
+                $message .= ' Ref: '.$correlationId;
+            }
+
+            session()->flash('error', $message);
         }
     }
 

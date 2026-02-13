@@ -102,7 +102,10 @@ class Chat extends Component
         }
 
         $this->coachNotice = ($result['used_fallback'] ?? false)
-            ? ($result['notice'] ?? 'Coach is currently using built-in support mode.')
+            ? $this->formatFallbackNotice(
+                $result['notice'] ?? 'AI is busy right now, showing a safe fallback suggestion.',
+                $result['correlation_id'] ?? null
+            )
             : null;
 
         $this->isTyping = false;
@@ -187,6 +190,15 @@ class Chat extends Component
             ->limit(10)
             ->get()
             ->toArray();
+    }
+
+    protected function formatFallbackNotice(string $message, ?string $correlationId): string
+    {
+        if (! config('app.debug') || empty($correlationId)) {
+            return $message;
+        }
+
+        return $message.' Ref: '.$correlationId;
     }
 
     public function render()

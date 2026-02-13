@@ -7,10 +7,12 @@ use App\Models\Couple;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 class GeminiService
@@ -43,20 +45,26 @@ class GeminiService
     /**
      * Coach chat with retries and safe deterministic fallback.
      *
-     * @return array{text: string, source: 'gemini'|'fallback', used_fallback: bool, notice: ?string}
+     * @return array{text: string, source: 'gemini'|'fallback', used_fallback: bool, notice: ?string, correlation_id: ?string, failure_type: ?string}
      */
     public function coachReply(array $messages, string $mode = 'vent'): array
     {
-        return $this->generateWithSystemInstruction($messages, $this->getSystemPrompt($mode), $mode);
+        return $this->generateWithSystemInstruction($messages, $this->getSystemPrompt($mode), $mode, 'ai_coach');
     }
 
     /**
      * Generic Gemini call for text output using a custom system instruction.
      *
-     * @return array{text: string, source: 'gemini'|'fallback', used_fallback: bool, notice: ?string}
+     * @return array{text: string, source: 'gemini'|'fallback', used_fallback: bool, notice: ?string, correlation_id: ?string, failure_type: ?string}
      */
-    public function generateWithSystemInstruction(array $messages, string $systemInstruction, string $fallbackMode = 'vent'): array
-    {
+    public function generateWithSystemInstruction(
+        array $messages,
+        string $systemInstruction,
+        string $fallbackMode = 'vent',
+        string $requestMode = 'ai_coach'
+    ): array {
+        $correlationId = (string) Str::uuid();
+
         // Transform messages for Gemini format
         $contents = [];
 
@@ -82,16 +90,21 @@ class GeminiService
         }
 
         if (empty($this->apiKey)) {
+            $this->logFallbackUsed($requestMode, $correlationId, 'no_api_key');
+
             return [
                 'text' => $this->fallbackCoachResponse($messages, $fallbackMode),
                 'source' => 'fallback',
                 'used_fallback' => true,
-                'notice' => 'Coach is currently using built-in support mode.',
+                'notice' => 'AI is busy right now, showing a safe fallback suggestion.',
+                'correlation_id' => $correlationId,
+                'failure_type' => 'no_api_key',
             ];
         }
 
         $maxAttempts = $this->maxRetries + 1;
         $url = "{$this->baseUrl}/models/{$this->model}:generateContent?key={$this->apiKey}";
+        $lastFailureType = 'unknown';
 
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
             try {
@@ -104,13 +117,13 @@ class GeminiService
                 ]);
 
                 if (! $response->successful()) {
-                    throw new \RuntimeException('gemini_http_'.$response->status());
+                    throw new \RuntimeException('gemini_http_failure', $response->status());
                 }
 
                 $assistantText = $this->extractAssistantText($response->json());
 
                 if ($assistantText === null) {
-                    throw new \UnexpectedValueException('gemini_invalid_response_shape');
+                    throw new \UnexpectedValueException('gemini_parse_failure');
                 }
 
                 return [
@@ -118,15 +131,22 @@ class GeminiService
                     'source' => 'gemini',
                     'used_fallback' => false,
                     'notice' => null,
+                    'correlation_id' => null,
+                    'failure_type' => null,
                 ];
             } catch (Throwable $e) {
+                $failureType = $this->classifyFailureType($e);
+                $lastFailureType = $failureType;
+
                 Log::warning('Gemini chat attempt failed', [
                     'attempt' => $attempt,
                     'max_attempts' => $maxAttempts,
-                    'mode' => $fallbackMode,
+                    'request_mode' => $requestMode,
+                    'fallback_mode' => $fallbackMode,
+                    'failure_type' => $failureType,
+                    'correlation_id' => $correlationId,
                     'error_class' => get_class($e),
                     'error_code' => $e->getCode(),
-                    'error_message' => $e->getMessage(),
                 ]);
 
                 if ($attempt < $maxAttempts) {
@@ -137,11 +157,15 @@ class GeminiService
             }
         }
 
+        $this->logFallbackUsed($requestMode, $correlationId, $lastFailureType);
+
         return [
             'text' => $this->fallbackCoachResponse($messages, $fallbackMode),
             'source' => 'fallback',
             'used_fallback' => true,
-            'notice' => 'Coach had trouble reaching AI and switched to built-in support mode.',
+            'notice' => 'AI is busy right now, showing a safe fallback suggestion.',
+            'correlation_id' => $correlationId,
+            'failure_type' => $lastFailureType,
         ];
     }
 
@@ -258,6 +282,39 @@ class GeminiService
         }
 
         return 'clarity and connection';
+    }
+
+    protected function classifyFailureType(Throwable $e): string
+    {
+        if ($e instanceof \UnexpectedValueException) {
+            return 'parse';
+        }
+
+        if ($e instanceof ConnectionException) {
+            return 'timeout';
+        }
+
+        if ($e instanceof \RuntimeException) {
+            $status = $e->getCode();
+            if ($status === 429) {
+                return '429';
+            }
+
+            if ($status >= 500 && $status <= 599) {
+                return '5xx';
+            }
+        }
+
+        return 'unknown';
+    }
+
+    protected function logFallbackUsed(string $requestMode, string $correlationId, string $failureType): void
+    {
+        Log::info('Gemini fallback used', [
+            'request_mode' => $requestMode,
+            'failure_type' => $failureType,
+            'correlation_id' => $correlationId,
+        ]);
     }
 
     public function createDraftSuggestion(
