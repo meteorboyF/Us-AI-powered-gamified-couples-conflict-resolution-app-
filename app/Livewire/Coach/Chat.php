@@ -3,7 +3,7 @@
 namespace App\Livewire\Coach;
 
 use App\Models\AiChat;
-use App\Models\Couple;
+use App\Services\CoupleService;
 use App\Services\GeminiService;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +19,7 @@ class Chat extends Component
     public function mount()
     {
         $user = Auth::user();
-        $couple = $user->couple;
+        $couple = app(CoupleService::class)->getUserCouple($user);
 
         if (!$couple) {
             return redirect()->route('dashboard');
@@ -105,7 +105,7 @@ class Chat extends Component
 
         $this->chat = AiChat::create([
             'user_id' => Auth::id(),
-            'couple_id' => Auth::user()->couple_id,
+            'couple_id' => $this->chat->couple_id,
             'type' => $newMode,
             'messages' => [],
             'is_active' => true
@@ -117,6 +117,6 @@ class Chat extends Component
 
     public function render()
     {
-        return view('livewire.coach.chat');
+        return view('livewire.coach.chat')->layout('layouts.app');
     }
 }
