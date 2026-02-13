@@ -146,6 +146,10 @@ class RepairService
             throw new \Exception('You cannot acknowledge your own agreement.');
         }
 
+        if ($agreement->partner_acknowledged) {
+            return $agreement->fresh();
+        }
+
         return DB::transaction(function () use ($agreement, $user) {
             $agreement->acknowledge();
 
@@ -169,12 +173,28 @@ class RepairService
     {
         $this->assertCoupleMember($session->couple, $user);
 
+        if ($session->status === 'completed') {
+            throw new \Exception('This repair session is already completed.');
+        }
+
+        if (blank($session->initiator_perspective) || blank($session->partner_perspective)) {
+            throw new \Exception('Both partners must share their perspective before completing.');
+        }
+
+        $goals = $session->shared_goals ?? [];
+        if (count($goals) < 3) {
+            throw new \Exception('Please select shared goals before completing the repair.');
+        }
+
         // Verify both partners have at least one agreement
         $initiatorAgreements = $session->agreements()
             ->where('created_by', $session->initiated_by)
             ->count();
 
         $partner = $session->getPartner();
+        if (!$partner) {
+            throw new \Exception('A partner must join before completing the repair.');
+        }
         $partnerAgreements = $session->agreements()
             ->where('created_by', $partner->id)
             ->count();
