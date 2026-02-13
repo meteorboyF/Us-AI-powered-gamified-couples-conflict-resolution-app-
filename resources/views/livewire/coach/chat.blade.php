@@ -30,6 +30,18 @@
             </div>
         </div>
 
+        @if (session()->has('message'))
+            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                {{ session('message') }}
+            </div>
+        @endif
+
+        @if (session()->has('error'))
+            <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {{ session('error') }}
+            </div>
+        @endif
+
         <!-- Chat Area -->
         <div class="flex-1 overflow-y-auto mb-6 space-y-4 p-4 min-h-[50vh] max-h-[60vh] custom-scrollbar"
             id="chat-container">
@@ -60,6 +72,57 @@
 
             <div id="scroll-anchor"></div>
         </div>
+
+        @if ($mode === 'bridge')
+            <div class="mb-6 space-y-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-600">Bridge Drafts</h2>
+
+                @forelse($bridgeSuggestions as $suggestion)
+                    <div class="rounded-2xl border border-teal-100 bg-white/90 p-4 shadow-sm">
+                        <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Status: {{ ucfirst($suggestion['status']) }}
+                        </div>
+                        <p class="mb-4 whitespace-pre-wrap text-sm text-gray-800">{{ $suggestion['suggested_message'] }}</p>
+
+                        <div class="flex flex-wrap gap-2">
+                            @if ($suggestion['status'] === 'draft')
+                                <button wire:click="approveSuggestion({{ $suggestion['id'] }})"
+                                    class="rounded-lg bg-teal-600 px-3 py-2 text-xs font-semibold text-white hover:bg-teal-700">
+                                    Approve
+                                </button>
+                                <button wire:click="discardSuggestion({{ $suggestion['id'] }})"
+                                    class="rounded-lg bg-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-300">
+                                    Discard
+                                </button>
+                            @elseif ($suggestion['status'] === 'approved')
+                                <button wire:click="sendApprovedSuggestionToChat({{ $suggestion['id'] }})"
+                                    class="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
+                                    Send To Partner
+                                </button>
+                                <button wire:click="discardSuggestion({{ $suggestion['id'] }})"
+                                    class="rounded-lg bg-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-300">
+                                    Discard
+                                </button>
+                            @elseif ($suggestion['status'] === 'sent')
+                                <button disabled
+                                    class="cursor-not-allowed rounded-lg bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-700">
+                                    Sent
+                                </button>
+                            @elseif ($suggestion['status'] === 'discarded')
+                                <button disabled
+                                    class="cursor-not-allowed rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-500">
+                                    Discarded
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="rounded-2xl border border-dashed border-gray-300 bg-white/70 p-4 text-sm text-gray-500">
+                        Generate a bridge suggestion to review it before sending anything to partner chat.
+                    </div>
+                @endforelse
+            </div>
+        @endif
 
         <!-- Input Area -->
         <div class="bg-white/90 backdrop-blur-xl p-4 rounded-2xl shadow-lg border border-white/50 sticky bottom-4">

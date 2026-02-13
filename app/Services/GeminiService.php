@@ -2,6 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\AiBridgeSuggestion;
+use App\Models\Couple;
+use App\Models\Message;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -109,5 +116,134 @@ class GeminiService
         }
 
         return "Try saying: 'I feel overwhelmed when tasks stack up...' (This is a MOCK response because no API key was found).";
+    }
+
+    public function createDraftSuggestion(
+        Couple $couple,
+        User $user,
+        string $suggestedMessage,
+        ?array $sourceContext = null
+    ): AiBridgeSuggestion {
+        $this->assertCoupleMember($couple, $user);
+
+        return AiBridgeSuggestion::create([
+            'couple_id' => $couple->id,
+            'user_id' => $user->id,
+            'source_context' => $this->sanitizeSourceContext($sourceContext),
+            'suggested_message' => trim($suggestedMessage),
+            'status' => AiBridgeSuggestion::STATUS_DRAFT,
+        ]);
+    }
+
+    public function approveSuggestion(int $suggestionId, int $userId): AiBridgeSuggestion
+    {
+        $suggestion = AiBridgeSuggestion::findOrFail($suggestionId);
+        $this->assertOwner($suggestion, $userId);
+        $this->assertCoupleMember($suggestion->couple, $suggestion->user);
+
+        if ($suggestion->status === AiBridgeSuggestion::STATUS_SENT) {
+            throw new \LogicException('Sent suggestions cannot be modified.');
+        }
+
+        if ($suggestion->status === AiBridgeSuggestion::STATUS_DISCARDED) {
+            throw new \LogicException('Discarded suggestions cannot be approved.');
+        }
+
+        if ($suggestion->status !== AiBridgeSuggestion::STATUS_APPROVED) {
+            $suggestion->update([
+                'status' => AiBridgeSuggestion::STATUS_APPROVED,
+                'approved_at' => now(),
+            ]);
+        }
+
+        return $suggestion->fresh();
+    }
+
+    public function discardSuggestion(int $suggestionId, int $userId): AiBridgeSuggestion
+    {
+        $suggestion = AiBridgeSuggestion::findOrFail($suggestionId);
+        $this->assertOwner($suggestion, $userId);
+        $this->assertCoupleMember($suggestion->couple, $suggestion->user);
+
+        if ($suggestion->status === AiBridgeSuggestion::STATUS_SENT) {
+            throw new \LogicException('Sent suggestions cannot be discarded.');
+        }
+
+        if ($suggestion->status !== AiBridgeSuggestion::STATUS_DISCARDED) {
+            $suggestion->update([
+                'status' => AiBridgeSuggestion::STATUS_DISCARDED,
+            ]);
+        }
+
+        return $suggestion->fresh();
+    }
+
+    public function sendApprovedSuggestionToChat(int $suggestionId, int $userId): Message
+    {
+        return DB::transaction(function () use ($suggestionId, $userId) {
+            $suggestion = AiBridgeSuggestion::query()->lockForUpdate()->findOrFail($suggestionId);
+            $this->assertOwner($suggestion, $userId);
+            $this->assertCoupleMember($suggestion->couple, $suggestion->user);
+
+            if ($suggestion->status === AiBridgeSuggestion::STATUS_SENT) {
+                throw new \LogicException('Suggestion already sent.');
+            }
+
+            if ($suggestion->status !== AiBridgeSuggestion::STATUS_APPROVED) {
+                throw new \LogicException('Only approved suggestions can be sent.');
+            }
+
+            $message = Message::create([
+                'couple_id' => $suggestion->couple_id,
+                'user_id' => $suggestion->user_id,
+                'content' => $suggestion->suggested_message,
+                'type' => 'text',
+                'metadata' => [
+                    'source' => 'ai_bridge',
+                    'ai_bridge_suggestion_id' => $suggestion->id,
+                ],
+            ]);
+
+            $suggestion->update([
+                'status' => AiBridgeSuggestion::STATUS_SENT,
+                'sent_at' => now(),
+            ]);
+
+            return $message;
+        });
+    }
+
+    protected function sanitizeSourceContext(?array $sourceContext): ?array
+    {
+        if ($sourceContext === null) {
+            return null;
+        }
+
+        $allowed = Arr::only($sourceContext, ['mode', 'ai_chat_id']);
+
+        return empty($allowed) ? null : $allowed;
+    }
+
+    protected function assertOwner(AiBridgeSuggestion $suggestion, int $userId): void
+    {
+        if ($suggestion->user_id !== $userId) {
+            throw new AuthorizationException('Unauthorized bridge suggestion access.');
+        }
+    }
+
+    protected function assertCoupleMember(Couple $couple, User $user): void
+    {
+        if (! $couple->isActive()) {
+            throw new AuthorizationException('Unauthorized couple access.');
+        }
+
+        $isMember = $couple->users()
+            ->where('users.id', $user->id)
+            ->where('couple_user.is_active', true)
+            ->exists();
+
+        if (! $isMember) {
+            throw new AuthorizationException('Unauthorized couple access.');
+        }
     }
 }

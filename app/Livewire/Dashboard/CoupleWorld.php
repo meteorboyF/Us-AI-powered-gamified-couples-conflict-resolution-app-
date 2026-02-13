@@ -42,6 +42,6 @@ class CoupleWorld extends Component
 
     public function render()
     {
-        return view('livewire.dashboard.couple-world');
+        return view('livewire.dashboard.couple-world')->layout('layouts.app');
     }
 }

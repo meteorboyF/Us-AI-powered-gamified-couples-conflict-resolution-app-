@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Coach;
 
+use App\Models\AiBridgeSuggestion;
 use App\Models\AiChat;
 use App\Services\CoupleService;
 use App\Services\GeminiService;
@@ -20,6 +21,8 @@ class Chat extends Component
 
     public $isTyping = false;
 
+    public $bridgeSuggestions = [];
+
     public function mount()
     {
         $user = Auth::user();
@@ -37,6 +40,7 @@ class Chat extends Component
 
         $this->mode = $this->chat->type;
         $this->messages = $this->chat->messages ?? [];
+        $this->loadBridgeSuggestions();
 
         // Add initial greeting if empty
         if (empty($this->messages)) {
@@ -78,7 +82,22 @@ class Chat extends Component
         // Call AI
         $response = $aiService->chat($context, $this->mode);
 
-        $this->addMessage('assistant', $response);
+        if ($this->mode === 'bridge') {
+            $aiService->createDraftSuggestion(
+                $this->chat->couple,
+                Auth::user(),
+                $response,
+                [
+                    'mode' => 'bridge',
+                    'ai_chat_id' => $this->chat->id,
+                ]
+            );
+
+            $this->loadBridgeSuggestions();
+        } else {
+            $this->addMessage('assistant', $response);
+        }
+
         $this->isTyping = false;
     }
 
@@ -117,7 +136,50 @@ class Chat extends Component
         ]);
 
         $this->messages = [];
+        $this->loadBridgeSuggestions();
         $this->addBotMessage($this->getGreeting());
+    }
+
+    public function approveSuggestion(int $suggestionId, GeminiService $aiService)
+    {
+        try {
+            $aiService->approveSuggestion($suggestionId, Auth::id());
+            $this->loadBridgeSuggestions();
+        } catch (\Throwable $e) {
+            session()->flash('error', $e->getMessage());
+        }
+    }
+
+    public function discardSuggestion(int $suggestionId, GeminiService $aiService)
+    {
+        try {
+            $aiService->discardSuggestion($suggestionId, Auth::id());
+            $this->loadBridgeSuggestions();
+        } catch (\Throwable $e) {
+            session()->flash('error', $e->getMessage());
+        }
+    }
+
+    public function sendApprovedSuggestionToChat(int $suggestionId, GeminiService $aiService)
+    {
+        try {
+            $aiService->sendApprovedSuggestionToChat($suggestionId, Auth::id());
+            $this->loadBridgeSuggestions();
+            session()->flash('message', 'Suggestion sent to partner.');
+        } catch (\Throwable $e) {
+            session()->flash('error', $e->getMessage());
+        }
+    }
+
+    protected function loadBridgeSuggestions(): void
+    {
+        $this->bridgeSuggestions = AiBridgeSuggestion::query()
+            ->where('user_id', Auth::id())
+            ->where('couple_id', $this->chat->couple_id)
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->toArray();
     }
 
     public function render()

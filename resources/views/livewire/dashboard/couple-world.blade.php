@@ -5,6 +5,7 @@
             <!-- Header with World Info -->
             <div class="mb-8 text-center">
                 <div class="inline-block p-8 bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20">
+                    <p class="text-gray-700 font-semibold mb-2">Hi, {{ auth()->user()->name }}</p>
                     <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
                         Your World Together
                     </h1>
