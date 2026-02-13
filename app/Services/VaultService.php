@@ -27,8 +27,9 @@ class VaultService
         $this->assertCoupleMember($couple, $user);
         $this->validateFileType($file, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
         $this->validateFileSize($file, 5 * 1024); // 5MB in KB
+        $isFirstPhoto = !$this->hasUploadedType($couple, 'photo');
 
-        return DB::transaction(function () use ($couple, $user, $file, $data) {
+        return DB::transaction(function () use ($couple, $user, $file, $data, $isFirstPhoto) {
             $path = $this->storeFile($file, $couple->id, 'photo');
 
             $memory = Memory::create([
@@ -45,7 +46,7 @@ class VaultService
             ]);
 
             // Award XP for first photo
-            if (!$this->hasUploadedType($couple, 'photo')) {
+            if ($isFirstPhoto) {
                 $this->xpService->awardXp(
                     $couple,
                     'vault',
@@ -67,8 +68,9 @@ class VaultService
         $this->assertCoupleMember($couple, $user);
         $this->validateFileType($file, ['mp4', 'mov', 'avi', 'webm']);
         $this->validateFileSize($file, 50 * 1024); // 50MB in KB
+        $isFirstVideo = !$this->hasUploadedType($couple, 'video');
 
-        return DB::transaction(function () use ($couple, $user, $file, $data) {
+        return DB::transaction(function () use ($couple, $user, $file, $data, $isFirstVideo) {
             $path = $this->storeFile($file, $couple->id, 'video');
 
             $memory = Memory::create([
@@ -85,7 +87,7 @@ class VaultService
             ]);
 
             // Award XP for first video
-            if (!$this->hasUploadedType($couple, 'video')) {
+            if ($isFirstVideo) {
                 $this->xpService->awardXp(
                     $couple,
                     'vault',
@@ -107,8 +109,9 @@ class VaultService
         $this->assertCoupleMember($couple, $user);
         $this->validateFileType($file, ['mp3', 'wav', 'm4a', 'ogg']);
         $this->validateFileSize($file, 10 * 1024); // 10MB in KB
+        $isFirstVoiceNote = !$this->hasUploadedType($couple, 'voice_note');
 
-        return DB::transaction(function () use ($couple, $user, $file, $data) {
+        return DB::transaction(function () use ($couple, $user, $file, $data, $isFirstVoiceNote) {
             $path = $this->storeFile($file, $couple->id, 'voice_note');
 
             $memory = Memory::create([
@@ -125,7 +128,7 @@ class VaultService
             ]);
 
             // Award XP for first voice note
-            if (!$this->hasUploadedType($couple, 'voice_note')) {
+            if ($isFirstVoiceNote) {
                 $this->xpService->awardXp(
                     $couple,
                     'vault',
