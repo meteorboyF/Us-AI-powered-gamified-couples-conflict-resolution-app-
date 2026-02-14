@@ -24,6 +24,11 @@ class MessageSent implements ShouldBroadcast
         ];
     }
 
+    public function broadcastAs(): string
+    {
+        return 'chatv2.message.sent';
+    }
+
     public function broadcastWith(): array
     {
         return [

@@ -28,8 +28,16 @@ class ConversationController extends Controller
         $conversation = $this->chatService->getOrCreateConversationForCouple($couple);
         Gate::authorize('view', $conversation);
 
-        return view('chat-v2.room', [
+        $partner = $couple->users()
+            ->where('users.id', '!=', $request->user()->id)
+            ->first();
+
+        return view('livewire.chatv2.room', [
             'conversationId' => $conversation->id,
+            'coupleId' => $couple->id,
+            'userId' => $request->user()->id,
+            'partnerName' => $partner?->name ?? 'Partner',
+            'showDiagnostics' => app()->isLocal() || config('app.debug'),
         ]);
     }
 

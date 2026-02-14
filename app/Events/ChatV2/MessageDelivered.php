@@ -28,6 +28,11 @@ class MessageDelivered implements ShouldBroadcast
         ];
     }
 
+    public function broadcastAs(): string
+    {
+        return 'chatv2.message.delivered';
+    }
+
     public function broadcastWith(): array
     {
         return [

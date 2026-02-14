@@ -28,6 +28,11 @@ class MessageRead implements ShouldBroadcast
         ];
     }
 
+    public function broadcastAs(): string
+    {
+        return 'chatv2.message.read';
+    }
+
     public function broadcastWith(): array
     {
         return [
