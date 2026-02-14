@@ -32,7 +32,7 @@ class ConversationController extends Controller
             ->where('users.id', '!=', $request->user()->id)
             ->first();
 
-        return view('livewire.chatv2.room', [
+        return view('chat-v2.room', [
             'conversationId' => $conversation->id,
             'coupleId' => $couple->id,
             'userId' => $request->user()->id,
@@ -49,38 +49,14 @@ class ConversationController extends Controller
         $conversation = $this->chatService->getOrCreateConversationForCouple($couple);
         Gate::authorize('view', $conversation);
 
-        $messages = Message::query()
-            ->where('conversation_id', $conversation->id)
-            ->with(['sender:id,name', 'receipts'])
-            ->orderByDesc('id')
-            ->limit(50)
-            ->get()
-            ->reverse()
-            ->values();
-
-        return response()->json([
-            'conversation_id' => $conversation->id,
-            'messages' => $messages,
-        ]);
+        return $this->conversationPayload($request, $conversation);
     }
 
     public function showConversation(Request $request, Conversation $conversation): JsonResponse
     {
         Gate::authorize('view', $conversation);
 
-        $messages = Message::query()
-            ->where('conversation_id', $conversation->id)
-            ->with(['sender:id,name', 'receipts'])
-            ->orderByDesc('id')
-            ->limit(50)
-            ->get()
-            ->reverse()
-            ->values();
-
-        return response()->json([
-            'conversation_id' => $conversation->id,
-            'messages' => $messages,
-        ]);
+        return $this->conversationPayload($request, $conversation);
     }
 
     public function send(SendMessageRequest $request): JsonResponse
@@ -106,5 +82,42 @@ class ConversationController extends Controller
         return response()->json([
             'message' => $message,
         ], 201);
+    }
+
+    private function conversationPayload(Request $request, Conversation $conversation): JsonResponse
+    {
+        $beforeId = $request->integer('before_id');
+        $limit = min(100, max(10, $request->integer('limit', 30)));
+
+        $query = Message::query()
+            ->where('conversation_id', $conversation->id)
+            ->with(['sender:id,name', 'receipts']);
+
+        if ($beforeId) {
+            $query->where('id', '<', $beforeId);
+        }
+
+        $messages = $query
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->reverse()
+            ->values();
+
+        $oldestId = $messages->first()->id ?? $beforeId;
+        $hasMore = false;
+
+        if ($oldestId) {
+            $hasMore = Message::query()
+                ->where('conversation_id', $conversation->id)
+                ->where('id', '<', $oldestId)
+                ->exists();
+        }
+
+        return response()->json([
+            'conversation_id' => $conversation->id,
+            'messages' => $messages,
+            'has_more' => $hasMore,
+        ]);
     }
 }
