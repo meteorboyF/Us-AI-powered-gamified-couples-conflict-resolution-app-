@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ChatV2\ConversationController as ChatV2ConversationController;
+use App\Http\Controllers\ChatV2\ReceiptController as ChatV2ReceiptController;
 use App\Livewire\Couple\CreateOrJoin;
 use App\Livewire\Dashboard\CoupleWorld;
 use App\Livewire\Mission\Board;
@@ -32,6 +34,14 @@ Route::middleware([
     Route::middleware(['ensure.has.couple'])->group(function () {
         Route::get('/missions', Board::class)->name('missions.board');
         Route::get('/chat', \App\Livewire\Chat\Room::class)->name('chat.room');
+        Route::get('/chat-v2', [ChatV2ConversationController::class, 'show'])->name('chatv2.room');
+        Route::prefix('/chat-v2')->name('chatv2.')->group(function () {
+            Route::get('/conversation', [ChatV2ConversationController::class, 'index'])->name('conversation.index');
+            Route::get('/conversations/{conversation}', [ChatV2ConversationController::class, 'showConversation'])->name('conversation.show');
+            Route::post('/messages', [ChatV2ConversationController::class, 'send'])->name('messages.send');
+            Route::post('/messages/{message}/delivered', [ChatV2ReceiptController::class, 'delivered'])->name('messages.delivered');
+            Route::post('/messages/{message}/read', [ChatV2ReceiptController::class, 'read'])->name('messages.read');
+        });
 
         // Repair Flow
         Route::get('/repair/initiate', \App\Livewire\Repair\Initiate::class)->name('repair.initiate');

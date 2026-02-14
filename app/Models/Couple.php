@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\ChatV2\Conversation as ChatV2Conversation;
 use Illuminate\Database\Eloquent\Model;
 
 class Couple extends Model
@@ -67,6 +68,11 @@ class Couple extends Model
     public function coupleDates()
     {
         return $this->hasMany(CoupleDate::class);
+    }
+
+    public function chatV2Conversation()
+    {
+        return $this->hasOne(ChatV2Conversation::class, 'couple_id');
     }
 
     // Helper methods
