@@ -537,3 +537,24 @@ npm run build
 **Document Version**: 1.0  
 **Last Updated**: 2026-02-16  
 **Maintained by**: Us Development Team
+
+## 12) Local ChatV1 Couple Session Switch (Dev Only)
+
+For local ChatV1 testing, authenticated users can set the active couple in session:
+
+```text
+GET /_dev/set-couple/{coupleId}
+```
+
+Rules:
+- Route works only when `APP_ENV=local`.
+- User must already be a participant in a chat under that `coupleId`.
+- Success response:
+
+```json
+{ "current_couple_id": 1 }
+```
+
+Two-session quick flow:
+1. Browser A logs in, opens `/_dev/set-couple/1`, then opens `/chat`.
+2. Browser B logs in, opens `/_dev/set-couple/1`, then opens `/chat`.
