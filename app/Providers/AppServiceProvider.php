@@ -2,6 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Chat;
+use App\Models\ChatMessage;
+use App\Policies\ChatMessagePolicy;
+use App\Policies\ChatPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(Chat::class, ChatPolicy::class);
+        Gate::policy(ChatMessage::class, ChatMessagePolicy::class);
     }
 }
