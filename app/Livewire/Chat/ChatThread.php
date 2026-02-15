@@ -95,7 +95,7 @@ class ChatThread extends Component
     {
         return view('livewire.chat.chat-thread', [
             'chat' => $this->chat(),
-            'messages' => $this->messages(),
+            'messages' => $this->threadMessages(),
             'currentUserId' => auth()->id(),
         ]);
     }
@@ -150,7 +150,7 @@ class ChatThread extends Component
     /**
      * @return Collection<int, ChatMessage>
      */
-    private function messages(): Collection
+    private function threadMessages(): Collection
     {
         if ($this->chatId === null) {
             return new Collection;
