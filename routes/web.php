@@ -6,3 +6,7 @@ use App\Livewire\Home;
 Route::get('/', function () {
     return view('welcome'); // Make sure this says 'welcome'
 });
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+});

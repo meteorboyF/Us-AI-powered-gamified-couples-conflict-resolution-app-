@@ -32,7 +32,7 @@
                     </p>
 
                     <div class="flex flex-col gap-4 py-2">
-                        <x-pixel-button class="w-full">
+                        <x-pixel-button href="/dashboard" class="w-full">
                             Create New Couple
                         </x-pixel-button>
                         
