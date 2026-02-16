@@ -15,9 +15,11 @@
     <!-- GAME WORLD (PDF Page 17: Layered Scene) -->
     <main class="relative h-full w-full flex items-center justify-center">
 
-        <!-- Layer 1: Sky (Background) -->
-        <div class="absolute inset-0 bg-gradient-to-b from-navy to-[#1a2a44]"></div>
-
+        <!-- Layer 1: Sky with Vibe Overlay (PDF Page 4: Low vibe = gloom overlay) -->
+        <div class="absolute inset-0 bg-gradient-to-b from-navy to-[#1a2a44] transition-all duration-1000">
+            <!-- This overlay can be toggled via JS later to make things "Gloomier" -->
+            <div class="absolute inset-0 bg-black/20 mix-blend-multiply"></div>
+        </div>
         <!-- Layer 2: Distant Trees (Placeholder) -->
         <div class="absolute bottom-40 w-full flex justify-around opacity-30">
             <div class="w-32 h-64 bg-emerald-900 rounded-t-full"></div>
@@ -70,10 +72,11 @@
                 <span class="text-2xl group-active:scale-90 transition-transform">🔐</span>
                 <span class="font-pixel text-xs">VAULT</span>
             </button>
-            <button class="flex flex-col items-center p-2 hover:bg-sand rounded transition-colors group">
+            <a href="/coach"
+                class="flex flex-col items-center p-2 hover:bg-sand rounded transition-colors group cursor-pointer">
                 <span class="text-2xl group-active:scale-90 transition-transform">🤖</span>
                 <span class="font-pixel text-xs">AI COACH</span>
-            </button>
+            </a>
         </div>
     </nav>
 

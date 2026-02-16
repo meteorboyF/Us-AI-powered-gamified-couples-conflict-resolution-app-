@@ -14,3 +14,7 @@ Route::get('/dashboard', function () {
 Route::get('/chat', function () {
     return view('chat');
 });
+
+Route::get('/coach', function () {
+    return view('coach');
+});
