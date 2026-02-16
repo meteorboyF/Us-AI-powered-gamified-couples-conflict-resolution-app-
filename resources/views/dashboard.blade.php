@@ -68,10 +68,11 @@
                 <span class="text-2xl group-active:scale-90 transition-transform">💬</span>
                 <span class="font-pixel text-xs">CHAT</span>
             </a>
-            <button class="flex flex-col items-center p-2 hover:bg-sand rounded transition-colors group">
+            <a href="/vault"
+                class="flex flex-col items-center p-2 hover:bg-sand rounded transition-colors group cursor-pointer">
                 <span class="text-2xl group-active:scale-90 transition-transform">🔐</span>
                 <span class="font-pixel text-xs">VAULT</span>
-            </button>
+            </a>
             <a href="/coach"
                 class="flex flex-col items-center p-2 hover:bg-sand rounded transition-colors group cursor-pointer">
                 <span class="text-2xl group-active:scale-90 transition-transform">🤖</span>

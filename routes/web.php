@@ -18,3 +18,7 @@ Route::get('/chat', function () {
 Route::get('/coach', function () {
     return view('coach');
 });
+
+Route::get('/vault', function () {
+    return view('vault');
+});
