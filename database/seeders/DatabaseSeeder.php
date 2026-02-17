@@ -4,7 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\Couple;
 use App\Models\CoupleMember;
+use App\Models\CoupleWorldState;
 use App\Models\User;
+use App\Models\WorldItem;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +20,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(WorldItemsSeeder::class);
+
         if (app()->environment(['local', 'testing'])) {
             $demoUser = User::updateOrCreate(
                 ['email' => 'demo@us.test'],
@@ -67,6 +71,23 @@ class DatabaseSeeder extends Seeder
 
             $demoUser->forceFill(['current_couple_id' => $couple->id])->save();
             $partnerUser->forceFill(['current_couple_id' => $couple->id])->save();
+
+            CoupleWorldState::query()->updateOrCreate(
+                ['couple_id' => $couple->id],
+                [
+                    'vibe' => 'neutral',
+                    'level' => 1,
+                    'xp' => 0,
+                ]
+            );
+
+            $homeBase = WorldItem::query()->where('key', 'home_base')->first();
+
+            if ($homeBase) {
+                $couple->worldItems()->syncWithoutDetaching([
+                    $homeBase->id => ['unlocked_at' => now()],
+                ]);
+            }
         }
     }
 }

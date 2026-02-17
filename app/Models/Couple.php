@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Couple extends Model
 {
@@ -37,6 +38,18 @@ class Couple extends Model
     {
         return $this->belongsToMany(User::class, 'couple_members')
             ->withPivot(['role', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    public function worldState(): HasOne
+    {
+        return $this->hasOne(CoupleWorldState::class);
+    }
+
+    public function worldItems(): BelongsToMany
+    {
+        return $this->belongsToMany(WorldItem::class, 'couple_world_items')
+            ->withPivot(['unlocked_at'])
             ->withTimestamps();
     }
 }
