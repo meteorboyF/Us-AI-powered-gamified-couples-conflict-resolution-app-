@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 #[Layout('components.layouts.app')]
 class Home extends Component
@@ -13,4 +13,3 @@ class Home extends Component
         return view('livewire.home');
     }
 }
-
