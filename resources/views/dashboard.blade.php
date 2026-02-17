@@ -9,60 +9,60 @@
 </head>
 <!-- Alpine.js State: seeds starts at 42, isPlanted starts as false -->
 
-<body x-data="{ seeds: 42, isPlanted: false, showBuildMenu: false }" class="bg-navy h-screen overflow-hidden">
-    <x-status-bar />
+<body x-data="{ seeds: 42, isPlanted: false, showBuildMenu: false }" class="bg-navy min-h-screen overflow-y-auto">    
+<x-status-bar />
 
-    <!-- GAME WORLD -->
-    <main class="relative h-full w-full flex items-center justify-center">
+<!-- GAME WORLD -->
+    <!-- Removed h-full to let it expand naturally -->
+    <main class="relative w-full flex flex-col items-center justify-start pt-32 pb-48">
+        
+        <!-- Sky Layer (Fixed in background) -->
+        <div class="fixed inset-0 bg-gradient-to-b from-navy to-[#1a2a44] z-0"></div>
 
-        <!-- Sky Layer -->
-        <div class="absolute inset-0 bg-gradient-to-b from-navy to-[#1a2a44]"></div>
-
-        <!-- Ground Layer (Increased height to prevent nav overlap) -->
-        <div class="absolute bottom-0 w-full h-[40vh] bg-leaf border-t-8 border-[#3d8c4d]">
-
+        <!-- Ground Layer -->
+        <!-- Changed from absolute to relative and increased height -->
+        <div class="relative z-10 w-full h-[60vh] bg-leaf border-t-8 border-[#3d8c4d] mt-[40vh] shadow-[0_-20px_50px_rgba(0,0,0,0.3)]">
+            
             <!-- Items Grid -->
-            <div class="grid grid-cols-4 h-full max-w-5xl mx-auto gap-8 px-12 pt-16">
-
+            <div class="grid grid-cols-4 max-w-5xl mx-auto gap-8 px-12 pt-20">
+                
                 <!-- Slot 1: The House -->
-                <div class="relative h-32 flex flex-col items-center justify-end">
-                    <div class="text-6xl filter drop-shadow-xl animate-bounce duration-[3000ms]">🏡</div>
+                <div class="relative h-32 flex flex-col items-center justify-end group">
+                    <div class="text-7xl filter drop-shadow-2xl animate-bounce duration-[3000ms]">🏡</div>
                     <div class="w-16 h-4 bg-black/20 rounded-full blur-sm -mt-2"></div>
                 </div>
 
-                <!-- Slot 2: The Interactive Planting Slot -->
+                <!-- Slot 2: Interactive Slot -->
                 <div class="relative h-32 flex flex-col items-center justify-end">
-                    <!-- If NOT planted, show the ghost placeholder -->
                     <template x-if="!isPlanted">
-                        <div @click="showBuildMenu = true"
-                            class="w-24 h-24 border-4 border-dashed border-white/10 rounded-xl mt-8 cursor-pointer hover:bg-white/10 flex items-center justify-center text-white/20 font-pixel text-4xl">
+                        <div class="w-24 h-24 border-4 border-dashed border-white/20 rounded-xl flex items-center justify-center text-white/20 font-pixel text-4xl cursor-pointer hover:bg-white/10 transition-all"
+                             @click="isPlanted = true; seeds--">
                             +
                         </div>
                     </template>
-
-                    <!-- If PLANTED, show the flower -->
                     <template x-if="isPlanted">
                         <div class="flex flex-col items-center animate-bounce">
-                            <div class="text-5xl">🌻</div>
+                            <div class="text-6xl">🌻</div>
                             <div class="w-10 h-3 bg-black/20 rounded-full blur-sm"></div>
                         </div>
                     </template>
                 </div>
 
-                <!-- Slot 3: Empty -->
-                <div class="w-24 h-24 border-4 border-dashed border-white/10 rounded-xl mt-8"></div>
-
-                <!-- Slot 4: Empty -->
-                <div class="w-24 h-24 border-4 border-dashed border-white/10 rounded-xl mt-8"></div>
+                <!-- Slot 3 & 4: Empty -->
+                <div @click="showBuildMenu = true" class="w-24 h-24 border-4 border-dashed border-white/10 rounded-xl mt-8 cursor-pointer flex items-center justify-center text-white/10 font-pixel text-4xl hover:border-white/30">+</div>
+                <div @click="showBuildMenu = true" class="w-24 h-24 border-4 border-dashed border-white/10 rounded-xl mt-8 cursor-pointer flex items-center justify-center text-white/10 font-pixel text-4xl hover:border-white/30">+</div>
             </div>
+
+            <!-- Extra room at the very bottom so we can scroll PAST the nav bar -->
+            <div class="h-64"></div>
         </div>
 
-        <!-- Floating Prompt (Disappears when planted) -->
+        <!-- Floating Prompt (Moved to be relative to the scroll) -->
         <template x-if="!isPlanted">
-            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-                <button @click="isPlanted = true; seeds--"
-                    class="bg-parchment/90 border-4 border-toast px-6 py-3 rounded shadow-xl animate-pulse cursor-pointer hover:scale-110 transition-transform">
-                    <p class="font-pixel text-cocoa text-xl">Tap to plant Love Seeds</p>
+            <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                <button @click="isPlanted = true; seeds--" 
+                        class="bg-parchment/90 border-4 border-toast px-8 py-4 rounded shadow-[8px_8px_0_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-transform cursor-pointer">
+                    <p class="font-pixel text-cocoa text-2xl">Tap to plant Love Seeds</p>
                 </button>
             </div>
         </template>
