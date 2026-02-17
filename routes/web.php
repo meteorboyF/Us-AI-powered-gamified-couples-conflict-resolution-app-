@@ -26,3 +26,7 @@ Route::get('/vault', function () {
 Route::get('/missions', function () {
     return view('missions');
 });
+
+Route::get('/gifts', function () {
+    return view('gifts');
+});

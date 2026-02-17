@@ -83,6 +83,12 @@
                 class="flex flex-col items-center p-2 hover:bg-sand rounded transition-colors group cursor-pointer">
                 <span class="text-2xl group-active:scale-90 transition-transform">🤖</span>
                 <span class="font-pixel text-xs">AI COACH</span>
+
+                <a href="/gifts"
+                    class="flex flex-col items-center p-2 hover:bg-sand rounded transition-colors group cursor-pointer">
+                    <span class="text-2xl group-active:scale-90 transition-transform">🎁</span>
+                    <span class="font-pixel text-xs">GIFTS</span>
+                </a>
             </a>
         </div>
     </nav>
