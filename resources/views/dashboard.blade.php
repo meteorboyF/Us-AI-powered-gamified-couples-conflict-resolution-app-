@@ -27,25 +27,50 @@
             <div class="w-32 h-64 bg-emerald-900 rounded-t-full"></div>
         </div>
 
-        <!-- Layer 3: Ground (Foreground) -->
-        <div class="absolute bottom-0 w-full h-48 bg-leaf border-t-8 border-[#3d8c4d]">
-            <!-- Grid for item placement (PDF Page 17: Slot highlights) -->
-            <div class="grid grid-cols-4 h-full max-w-4xl mx-auto gap-4 p-8">
-                <div
-                    class="border-2 border-dashed border-white/20 rounded-lg hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center text-white/20 font-pixel text-4xl">
-                    +</div>
-                <div class="border-2 border-dashed border-white/20 rounded-lg flex items-center justify-center">
-                    <span class="text-4xl animate-bounce">🏡</span> <!-- Home placeholder -->
+        <!-- The Ground Layer -->
+        <div class="absolute bottom-0 w-full h-64 bg-leaf border-t-8 border-[#3d8c4d]">
+            <div class="grid grid-cols-4 h-full max-w-5xl mx-auto gap-8 px-12 pt-12">
+
+                <!-- Empty Slot -->
+                <div class="relative group cursor-pointer h-32">
+                    <div
+                        class="absolute inset-0 border-4 border-dashed border-white/20 group-hover:border-white/60 group-hover:bg-white/10 transition-all rounded-xl flex flex-col items-center justify-center">
+                        <span class="text-white/20 group-hover:text-white/60 font-pixel text-4xl mb-1">+</span>
+                        <span
+                            class="opacity-0 group-hover:opacity-100 font-pixel text-white text-xs uppercase transition-opacity">Plant</span>
+                    </div>
                 </div>
-                <div
-                    class="border-2 border-dashed border-white/20 rounded-lg hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center text-white/20 font-pixel text-4xl">
-                    +</div>
-                <div
-                    class="border-2 border-dashed border-white/20 rounded-lg hover:bg-white/10 transition-colors cursor-pointer flex items-center justify-center text-white/20 font-pixel text-4xl">
-                    +</div>
+
+                <!-- Occupied Slot (The House) -->
+                <div class="relative h-32 flex flex-col items-center justify-end">
+                    <div class="text-6xl filter drop-shadow-xl animate-bounce duration-[2000ms] relative z-10">🏡</div>
+                    <div class="w-16 h-4 bg-black/20 rounded-full blur-sm -mt-2"></div> <!-- Shadow -->
+
+                    <!-- Hover Label -->
+                    <div
+                        class="absolute -top-8 bg-cocoa text-white font-pixel text-[10px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
+                        Lv. 1 Cottage
+                    </div>
+                </div>
+
+                <!-- Another Empty Slot -->
+                <div class="relative group cursor-pointer h-32">
+                    <div
+                        class="absolute inset-0 border-4 border-dashed border-white/20 group-hover:border-white/60 group-hover:bg-white/10 transition-all rounded-xl flex flex-col items-center justify-center">
+                        <span class="text-white/20 group-hover:text-white/60 font-pixel text-4xl mb-1">+</span>
+                    </div>
+                </div>
+
+                <!-- Another Empty Slot -->
+                <div class="relative group cursor-pointer h-32">
+                    <div
+                        class="absolute inset-0 border-4 border-dashed border-white/20 group-hover:border-white/60 group-hover:bg-white/10 transition-all rounded-xl flex flex-col items-center justify-center">
+                        <span class="text-white/20 group-hover:text-white/60 font-pixel text-4xl mb-1">+</span>
+                    </div>
+                </div>
+
             </div>
         </div>
-
         <!-- Layer 4: Floating UI Prompts -->
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <div class="bg-parchment/90 border-2 border-toast px-4 py-2 rounded shadow-lg animate-bounce">
@@ -55,7 +80,6 @@
 
     </main>
 
-    <!-- BOTTOM MENU (PDF Page 17: Build Menu Drawer) -->
     <nav class="fixed bottom-0 left-0 right-0 p-4">
         <div
             class="max-w-md mx-auto bg-parchment border-4 border-toast flex justify-around p-2 shadow-[0_-6px_0_rgba(0,0,0,0.2)]">
@@ -92,7 +116,6 @@
             </a>
         </div>
     </nav>
-
 </body>
 
 </html>
