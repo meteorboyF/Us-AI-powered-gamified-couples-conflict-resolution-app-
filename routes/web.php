@@ -12,6 +12,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/couple', [CoupleController::class, 'manage'])->name('couples.manage');
     Route::post('/couples', [CoupleController::class, 'store'])->name('couples.store');
     Route::post('/couples/join', [CoupleController::class, 'join'])->name('couples.join');
     Route::post('/couples/switch', [CoupleController::class, 'switch'])->name('couples.switch');

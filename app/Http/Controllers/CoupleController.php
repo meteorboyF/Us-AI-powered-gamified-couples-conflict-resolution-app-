@@ -4,14 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Models\Couple;
 use App\Models\CoupleMember;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CoupleController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function manage(Request $request): View
+    {
+        $user = $request->user();
+
+        return view('couples.manage', [
+            'couples' => $user->couples()->get(['couples.id', 'couples.name']),
+            'currentCoupleId' => $user->current_couple_id,
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['nullable', 'string', 'max:255'],
@@ -38,20 +50,24 @@ class CoupleController extends Controller
             return $couple;
         });
 
-        return response()->json([
-            'couple_id' => $couple->id,
-            'invite_code' => $couple->invite_code,
-        ], 201);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'couple_id' => $couple->id,
+                'invite_code' => $couple->invite_code,
+            ], 201);
+        }
+
+        return redirect('/dashboard')->with('status', 'Couple created successfully.');
     }
 
-    public function join(Request $request): JsonResponse
+    public function join(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
-            'invite_code' => ['required', 'string'],
+            'invite_code' => ['required', 'string', 'max:32'],
         ]);
 
         $couple = Couple::query()
-            ->where('invite_code', $validated['invite_code'])
+            ->where('invite_code', Str::upper(trim($validated['invite_code'])))
             ->firstOrFail();
 
         $user = $request->user();
@@ -71,13 +87,17 @@ class CoupleController extends Controller
             $user->forceFill(['current_couple_id' => $couple->id])->save();
         });
 
-        return response()->json([
-            'couple_id' => $couple->id,
-            'joined' => true,
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'couple_id' => $couple->id,
+                'joined' => true,
+            ]);
+        }
+
+        return redirect('/dashboard')->with('status', 'Joined couple successfully.');
     }
 
-    public function switch(Request $request): JsonResponse
+    public function switch(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'couple_id' => ['required', 'integer', 'exists:couples,id'],
@@ -91,10 +111,14 @@ class CoupleController extends Controller
 
         $user->forceFill(['current_couple_id' => $coupleId])->save();
 
-        return response()->json([
-            'couple_id' => $coupleId,
-            'switched' => true,
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'couple_id' => $coupleId,
+                'switched' => true,
+            ]);
+        }
+
+        return redirect('/dashboard')->with('status', 'Current couple switched.');
     }
 
     private function generateInviteCode(): string
