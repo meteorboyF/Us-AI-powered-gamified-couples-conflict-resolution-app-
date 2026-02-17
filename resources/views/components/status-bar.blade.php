@@ -1,6 +1,7 @@
 <div class="fixed top-0 left-0 right-0 z-50 p-4">
-    <div class="max-w-xl mx-auto flex justify-between items-center bg-cocoa/80 border-b-4 border-toast backdrop-blur-md px-4 py-2 rounded-sm shadow-lg">
-        
+    <div
+        class="max-w-xl mx-auto flex justify-between items-center bg-cocoa/80 border-b-4 border-toast backdrop-blur-md px-4 py-2 rounded-sm shadow-lg">
+
         <!-- Left: XP & Seeds -->
         <div class="flex gap-4 items-center">
             <div class="flex flex-col">
@@ -24,10 +25,12 @@
             </div>
         </div>
 
-        <!-- Right: Streak -->
-        <div class="flex items-center gap-2">
+        <!-- Replace the streak div or add next to it -->
+        <a href="/profile" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <span class="text-white font-pixel text-2xl">7</span>
             <span class="text-warning text-2xl">🔥</span>
-        </div>
+            <div class="w-8 h-8 bg-sand border-2 border-white rounded-sm flex items-center justify-center text-sm ml-2">
+                👤</div>
+        </a>
     </div>
 </div>

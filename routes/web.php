@@ -30,3 +30,7 @@ Route::get('/missions', function () {
 Route::get('/gifts', function () {
     return view('gifts');
 });
+
+Route::get('/profile', function () {
+    return view('profile');
+});
