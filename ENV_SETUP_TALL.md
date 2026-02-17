@@ -64,6 +64,15 @@ php artisan test --filter=LoginTest
 
 ---
 
+## Production Security Recommendations
+
+Use these production-safe auth/session settings:
+- `APP_DEBUG=false`
+- `SESSION_SECURE_COOKIE=true`
+- `SESSION_SAME_SITE=lax`
+
+---
+
 ## Prerequisites
 
 ### Windows Users
