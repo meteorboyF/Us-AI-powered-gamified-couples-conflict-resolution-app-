@@ -22,3 +22,7 @@ Route::get('/coach', function () {
 Route::get('/vault', function () {
     return view('vault');
 });
+
+Route::get('/missions', function () {
+    return view('missions');
+});
