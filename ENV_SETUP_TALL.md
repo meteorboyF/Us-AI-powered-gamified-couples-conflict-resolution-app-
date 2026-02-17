@@ -43,6 +43,27 @@ php C:\xampp\php\composer.phar install
 
 ---
 
+## AuthV1 Quick Notes
+
+After installing dependencies and configuring `.env`, run:
+
+```bash
+php artisan migrate --seed
+```
+
+This seeds a demo user in local/testing:
+- Email: `demo@us.test`
+- Password: `password`
+
+Auth baseline test commands:
+
+```bash
+php artisan test --filter=Auth
+php artisan test --filter=LoginTest
+```
+
+---
+
 ## Prerequisites
 
 ### Windows Users
