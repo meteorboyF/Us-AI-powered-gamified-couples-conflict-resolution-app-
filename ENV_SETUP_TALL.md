@@ -6,6 +6,43 @@ This guide covers setting up a complete TALL stack development environment on **
 
 ---
 
+## Quick Setup For This Repository
+
+From the project root:
+
+```bash
+# PHP dependencies
+composer install
+
+# JS dependencies
+npm install
+
+# Local environment (never commit .env)
+cp .env.example .env
+php artisan key:generate
+
+# Local DB (sqlite example)
+touch database/database.sqlite
+# set DB_CONNECTION=sqlite and DB_DATABASE=database/database.sqlite in .env
+php artisan migrate
+
+# Run app + assets
+php artisan serve
+npm run dev
+
+# Validation
+php artisan test
+vendor/bin/pint
+```
+
+If `composer` is not available directly on Windows, run Composer via PHP:
+
+```powershell
+php C:\xampp\php\composer.phar install
+```
+
+---
+
 ## Prerequisites
 
 ### Windows Users
