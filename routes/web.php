@@ -16,6 +16,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/couples', [CoupleController::class, 'store'])->name('couples.store');
     Route::post('/couples/join', [CoupleController::class, 'join'])->name('couples.join');
     Route::post('/couples/switch', [CoupleController::class, 'switch'])->name('couples.switch');
+    Route::get('/world-ui', [WorldController::class, 'page'])->name('world.ui');
     Route::get('/world', [WorldController::class, 'index'])->name('world.index');
     Route::post('/world/vibe', [WorldController::class, 'updateVibe'])->name('world.vibe');
     Route::post('/world/unlock', [WorldController::class, 'unlock'])->name('world.unlock');
