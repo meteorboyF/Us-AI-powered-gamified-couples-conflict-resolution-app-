@@ -5,6 +5,7 @@ use App\Http\Controllers\CoupleController;
 use App\Http\Controllers\DailyCheckinController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UI\VaultUiController;
 use App\Http\Controllers\VaultController;
 use App\Http\Controllers\VaultUnlockController;
 use App\Http\Controllers\WorldController;
@@ -42,6 +43,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/vault/{item}/unlock-request', [VaultUnlockController::class, 'request'])->name('vault.unlock.request');
     Route::post('/vault/unlock/{unlockRequest}/approve', [VaultUnlockController::class, 'approve'])->name('vault.unlock.approve');
     Route::post('/vault/unlock/{unlockRequest}/reject', [VaultUnlockController::class, 'reject'])->name('vault.unlock.reject');
+    Route::get('/vault-ui', [VaultUiController::class, 'page'])->name('vault.ui');
+    Route::post('/vault-ui/create', [VaultUiController::class, 'create'])->name('vault.ui.create');
+    Route::post('/vault-ui/{item}/upload', [VaultUiController::class, 'upload'])->name('vault.ui.upload');
+    Route::post('/vault-ui/{item}/unlock-request', [VaultUiController::class, 'requestUnlock'])->name('vault.ui.requestUnlock');
+    Route::post('/vault-ui/unlock/{unlockRequest}/approve', [VaultUiController::class, 'approve'])->name('vault.ui.approve');
+    Route::post('/vault-ui/unlock/{unlockRequest}/reject', [VaultUiController::class, 'reject'])->name('vault.ui.reject');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
