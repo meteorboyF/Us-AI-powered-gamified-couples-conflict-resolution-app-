@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\AiDraft;
+use App\Models\AiMessage;
+use App\Models\AiSession;
 use App\Models\Chat;
 use App\Models\ChatAttachment;
 use App\Models\ChatMessage;
@@ -241,6 +244,134 @@ class DatabaseSeeder extends Seeder
                     'meta' => ['consent_required' => true],
                 ]
             );
+
+            $ventSession = AiSession::query()->firstOrCreate(
+                [
+                    'couple_id' => $couple->id,
+                    'mode' => 'vent',
+                ],
+                [
+                    'created_by_user_id' => $demoUser->id,
+                    'title' => 'Vent Demo',
+                    'status' => 'active',
+                    'safety_flags' => [],
+                    'meta' => [],
+                ]
+            );
+
+            if (! $ventSession->messages()->exists()) {
+                AiMessage::query()->create([
+                    'ai_session_id' => $ventSession->id,
+                    'sender_type' => 'user',
+                    'sender_user_id' => $demoUser->id,
+                    'content' => 'I felt ignored during our conversation.',
+                    'role' => 'user',
+                    'safety' => [],
+                ]);
+
+                AiMessage::query()->create([
+                    'ai_session_id' => $ventSession->id,
+                    'sender_type' => 'ai',
+                    'sender_user_id' => null,
+                    'content' => 'Vent Reflection: What part felt hardest for you?',
+                    'role' => 'assistant',
+                    'safety' => [],
+                ]);
+            }
+
+            $bridgeSession = AiSession::query()->firstOrCreate(
+                [
+                    'couple_id' => $couple->id,
+                    'mode' => 'bridge',
+                ],
+                [
+                    'created_by_user_id' => $demoUser->id,
+                    'title' => 'Bridge Demo',
+                    'status' => 'active',
+                    'safety_flags' => [],
+                    'meta' => [],
+                ]
+            );
+
+            if (! $bridgeSession->messages()->exists()) {
+                AiMessage::query()->create([
+                    'ai_session_id' => $bridgeSession->id,
+                    'sender_type' => 'user',
+                    'sender_user_id' => $partnerUser->id,
+                    'content' => 'Please rewrite this so it sounds calm.',
+                    'role' => 'user',
+                    'safety' => [],
+                ]);
+
+                $bridgeAi = AiMessage::query()->create([
+                    'ai_session_id' => $bridgeSession->id,
+                    'sender_type' => 'ai',
+                    'sender_user_id' => null,
+                    'content' => 'Draft Bridge Message: I want to understand each other. Ask before sending.',
+                    'role' => 'assistant',
+                    'safety' => [],
+                ]);
+
+                AiDraft::query()->firstOrCreate(
+                    [
+                        'ai_session_id' => $bridgeSession->id,
+                        'draft_type' => 'bridge_message',
+                    ],
+                    [
+                        'created_by_user_id' => $partnerUser->id,
+                        'title' => 'Bridge Draft',
+                        'content' => $bridgeAi->content,
+                        'status' => 'draft',
+                    ]
+                );
+            }
+
+            $repairSession = AiSession::query()->firstOrCreate(
+                [
+                    'couple_id' => $couple->id,
+                    'mode' => 'repair',
+                ],
+                [
+                    'created_by_user_id' => $partnerUser->id,
+                    'title' => 'Repair Demo',
+                    'status' => 'active',
+                    'safety_flags' => [],
+                    'meta' => [],
+                ]
+            );
+
+            if (! $repairSession->messages()->exists()) {
+                AiMessage::query()->create([
+                    'ai_session_id' => $repairSession->id,
+                    'sender_type' => 'user',
+                    'sender_user_id' => $partnerUser->id,
+                    'content' => 'We need a short repair plan after conflict.',
+                    'role' => 'user',
+                    'safety' => [],
+                ]);
+
+                $repairAi = AiMessage::query()->create([
+                    'ai_session_id' => $repairSession->id,
+                    'sender_type' => 'ai',
+                    'sender_user_id' => null,
+                    'content' => "Repair Plan:\n1) Pause\n2) Reflect\n3) Share needs\n4) Agree next step\n5) Check-in",
+                    'role' => 'assistant',
+                    'safety' => [],
+                ]);
+
+                AiDraft::query()->firstOrCreate(
+                    [
+                        'ai_session_id' => $repairSession->id,
+                        'draft_type' => 'repair_plan',
+                    ],
+                    [
+                        'created_by_user_id' => $partnerUser->id,
+                        'title' => 'Repair Plan Draft',
+                        'content' => $repairAi->content,
+                        'status' => 'draft',
+                    ]
+                );
+            }
         }
     }
 }

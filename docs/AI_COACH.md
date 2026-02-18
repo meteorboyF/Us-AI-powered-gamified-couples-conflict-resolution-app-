@@ -26,12 +26,35 @@ docker run -d --name ollama -p 11434:11434 ollama/ollama
 docker exec -it ollama ollama pull llama3.1:8b
 ```
 
-## API Example (preview for upcoming endpoints)
+## Endpoints
+- `GET /ai/sessions`
+- `POST /ai/sessions`
+- `GET /ai/sessions/{session}`
+- `POST /ai/sessions/{session}/user-message`
+- `POST /ai/sessions/{session}/close`
+- `POST /ai/sessions/{session}/drafts/{draft}/accept`
+- `POST /ai/sessions/{session}/drafts/{draft}/discard`
+
+## API Examples
+Create session:
 ```bash
 curl -X POST http://127.0.0.1:8000/ai/sessions \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{"mode":"vent","title":"Tough conversation"}'
+```
+
+Send user message:
+```bash
+curl -X POST http://127.0.0.1:8000/ai/sessions/1/user-message \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"I feel unheard after last night."}'
+```
+
+List sessions:
+```bash
+curl -X GET http://127.0.0.1:8000/ai/sessions -H "Accept: application/json"
 ```
 
 ## Safety Limitations (MVP)
