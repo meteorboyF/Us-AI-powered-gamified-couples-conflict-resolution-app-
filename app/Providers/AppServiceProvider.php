@@ -22,6 +22,8 @@ use App\Policies\CoupleWorldStatePolicy;
 use App\Policies\DailyCheckinPolicy;
 use App\Policies\VaultItemPolicy;
 use App\Policies\VaultUnlockRequestPolicy;
+use App\Services\AI\AiManager;
+use App\Services\AI\Contracts\AiProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -35,7 +37,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(AiProvider::class, function ($app) {
+            return $app->make(AiManager::class)->provider();
+        });
     }
 
     /**
