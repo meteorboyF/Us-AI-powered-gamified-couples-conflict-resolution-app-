@@ -45,7 +45,7 @@ class ChatController extends Controller
 
         $validated = $request->validate([
             'before_id' => ['nullable', 'integer', 'min:1'],
-            'limit' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'limit' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $chat = $resolver->resolveForUser($request->user());
@@ -104,18 +104,7 @@ class ChatController extends Controller
             ]);
         }
 
-        $chat = $resolver->resolveForUser($request->user());
-        $this->authorize('send', $chat);
-
-        $message = ChatMessage::query()->create([
-            'chat_id' => $chat->id,
-            'sender_id' => $request->user()->id,
-            'type' => $type,
-            'body' => $validated['body'] ?? null,
-            'meta' => null,
-            'sent_at' => Carbon::now(),
-        ]);
-
+        $attachmentPayload = null;
         if ($hasAttachment) {
             $attachment = $request->file('attachment');
             $mime = $attachment->getMimeType() ?: $attachment->getClientMimeType();
@@ -135,7 +124,6 @@ class ChatController extends Controller
             ];
 
             if (! in_array($mime, $allowed, true)) {
-                $message->delete();
                 throw ValidationException::withMessages([
                     'attachment' => 'Unsupported attachment file type.',
                 ]);
@@ -145,16 +133,38 @@ class ChatController extends Controller
                 ? 'image'
                 : (str_starts_with($mime, 'audio/') ? 'audio' : 'file');
 
+            $attachmentPayload = [
+                'file' => $attachment,
+                'mime' => $mime,
+                'kind' => $kind,
+                'original_name' => $attachment->getClientOriginalName(),
+                'size' => $attachment->getSize(),
+            ];
+        }
+
+        $chat = $resolver->resolveForUser($request->user());
+        $this->authorize('send', $chat);
+
+        $message = ChatMessage::query()->create([
+            'chat_id' => $chat->id,
+            'sender_id' => $request->user()->id,
+            'type' => $type,
+            'body' => $validated['body'] ?? null,
+            'meta' => null,
+            'sent_at' => Carbon::now(),
+        ]);
+
+        if ($attachmentPayload) {
             $disk = (string) config('us.chat.attachments_disk', 'public');
-            $path = $attachment->store('chat-v1/'.$chat->id, $disk);
+            $path = $attachmentPayload['file']->store('chat-v1/'.$chat->id, $disk);
 
             $message->attachments()->create([
                 'disk' => $disk,
                 'path' => $path,
-                'original_name' => $attachment->getClientOriginalName(),
-                'mime' => $mime,
-                'size' => $attachment->getSize(),
-                'kind' => $kind,
+                'original_name' => $attachmentPayload['original_name'],
+                'mime' => $attachmentPayload['mime'],
+                'size' => $attachmentPayload['size'],
+                'kind' => $attachmentPayload['kind'],
             ]);
         }
 

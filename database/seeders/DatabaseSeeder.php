@@ -2,6 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\Chat;
+use App\Models\ChatAttachment;
+use App\Models\ChatMessage;
+use App\Models\ChatParticipant;
 use App\Models\Couple;
 use App\Models\CoupleMember;
 use App\Models\CoupleMission;
@@ -142,6 +146,55 @@ class DatabaseSeeder extends Seeder
                     'note' => 'A little tired but optimistic.',
                 ]
             );
+
+            $chat = Chat::query()->updateOrCreate(
+                ['couple_id' => $couple->id],
+                ['created_by_user_id' => $demoUser->id]
+            );
+
+            ChatParticipant::query()->updateOrCreate(
+                ['chat_id' => $chat->id, 'user_id' => $demoUser->id],
+                ['role' => 'member', 'joined_at' => now()]
+            );
+
+            ChatParticipant::query()->updateOrCreate(
+                ['chat_id' => $chat->id, 'user_id' => $partnerUser->id],
+                ['role' => 'member', 'joined_at' => now()]
+            );
+
+            if (! $chat->messages()->exists()) {
+                for ($i = 1; $i <= 15; $i++) {
+                    $senderId = $i % 2 === 0 ? $partnerUser->id : $demoUser->id;
+
+                    ChatMessage::query()->create([
+                        'chat_id' => $chat->id,
+                        'sender_id' => $senderId,
+                        'type' => 'text',
+                        'body' => "Demo chat message {$i}",
+                        'sent_at' => Carbon::now()->subMinutes(16 - $i),
+                    ]);
+                }
+            }
+
+            $latestMessageId = $chat->messages()->orderByDesc('id')->value('id');
+            $chat->forceFill(['last_message_id' => $latestMessageId])->save();
+
+            $firstMessage = $chat->messages()->orderBy('id')->first();
+            if ($firstMessage) {
+                ChatAttachment::query()->updateOrCreate(
+                    [
+                        'chat_message_id' => $firstMessage->id,
+                        'path' => 'chat-v1/demo/sample-guide.pdf',
+                    ],
+                    [
+                        'disk' => 'public',
+                        'original_name' => 'sample-guide.pdf',
+                        'mime' => 'application/pdf',
+                        'size' => 102400,
+                        'kind' => 'file',
+                    ]
+                );
+            }
         }
     }
 }
