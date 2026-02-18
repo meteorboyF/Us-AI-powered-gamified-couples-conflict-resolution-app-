@@ -20,13 +20,13 @@ class DailyCheckinController extends Controller
         $own = DailyCheckin::query()
             ->where('couple_id', $couple->id)
             ->where('user_id', $user->id)
-            ->where('checkin_date', $today)
+            ->whereDate('checkin_date', $today)
             ->first();
 
         $partner = DailyCheckin::query()
             ->where('couple_id', $couple->id)
             ->where('user_id', '!=', $user->id)
-            ->where('checkin_date', $today)
+            ->whereDate('checkin_date', $today)
             ->first();
 
         if ($own) {
@@ -64,17 +64,26 @@ class DailyCheckinController extends Controller
 
         $this->authorize('create', [DailyCheckin::class, $couple->id, $user->id]);
 
-        $checkin = DailyCheckin::query()->updateOrCreate(
-            [
+        $checkin = DailyCheckin::query()
+            ->where('couple_id', $couple->id)
+            ->where('user_id', $user->id)
+            ->whereDate('checkin_date', $today)
+            ->first();
+
+        if ($checkin) {
+            $checkin->fill([
+                'mood' => $validated['mood'],
+                'note' => $validated['note'] ?? null,
+            ])->save();
+        } else {
+            $checkin = DailyCheckin::query()->create([
                 'couple_id' => $couple->id,
                 'user_id' => $user->id,
                 'checkin_date' => $today,
-            ],
-            [
                 'mood' => $validated['mood'],
                 'note' => $validated['note'] ?? null,
-            ]
-        );
+            ]);
+        }
 
         return response()->json([
             'mood' => $checkin->mood,

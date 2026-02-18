@@ -33,7 +33,7 @@ class MissionController extends Controller
                     'status' => $mission->status,
                     'started_at' => $mission->started_at?->toDateString(),
                     'completed_at' => $mission->completed_at?->toDateString(),
-                    'today_completed' => $mission->completions()->where('completed_on', $today)->exists(),
+                    'today_completed' => $mission->completions()->whereDate('completed_on', $today)->exists(),
                     'template' => [
                         'id' => $mission->missionTemplate->id,
                         'key' => $mission->missionTemplate->key,
@@ -98,16 +98,24 @@ class MissionController extends Controller
 
         $this->authorize('update', $mission);
 
-        MissionCompletion::query()->updateOrCreate(
-            [
-                'couple_mission_id' => $mission->id,
-                'completed_on' => $today,
-            ],
-            [
+        $completion = MissionCompletion::query()
+            ->where('couple_mission_id', $mission->id)
+            ->whereDate('completed_on', $today)
+            ->first();
+
+        if ($completion) {
+            $completion->fill([
                 'completed_by_user_id' => $request->user()->id,
                 'notes' => $validated['notes'] ?? null,
-            ]
-        );
+            ])->save();
+        } else {
+            MissionCompletion::query()->create([
+                'couple_mission_id' => $mission->id,
+                'completed_on' => $today,
+                'completed_by_user_id' => $request->user()->id,
+                'notes' => $validated['notes'] ?? null,
+            ]);
+        }
 
         return response()->json([
             'mission_id' => $mission->id,
