@@ -4,9 +4,13 @@ namespace Database\Seeders;
 
 use App\Models\Couple;
 use App\Models\CoupleMember;
+use App\Models\CoupleMission;
 use App\Models\CoupleWorldState;
+use App\Models\DailyCheckin;
+use App\Models\MissionTemplate;
 use App\Models\User;
 use App\Models\WorldItem;
+use Carbon\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +25,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(WorldItemsSeeder::class);
+        $this->call(MissionTemplatesSeeder::class);
 
         if (app()->environment(['local', 'testing'])) {
             $demoUser = User::updateOrCreate(
@@ -88,6 +93,55 @@ class DatabaseSeeder extends Seeder
                     $homeBase->id => ['unlocked_at' => now()],
                 ]);
             }
+
+            $missionKeys = ['daily_gratitude', 'weekly_date_planning'];
+
+            $templates = MissionTemplate::query()
+                ->whereIn('key', $missionKeys)
+                ->get()
+                ->keyBy('key');
+
+            foreach ($missionKeys as $key) {
+                if (! $templates->has($key)) {
+                    continue;
+                }
+
+                CoupleMission::query()->updateOrCreate(
+                    [
+                        'couple_id' => $couple->id,
+                        'mission_template_id' => $templates[$key]->id,
+                    ],
+                    [
+                        'status' => 'active',
+                        'started_at' => Carbon::today(),
+                        'completed_at' => null,
+                    ]
+                );
+            }
+
+            DailyCheckin::query()->updateOrCreate(
+                [
+                    'couple_id' => $couple->id,
+                    'user_id' => $demoUser->id,
+                    'checkin_date' => Carbon::today(),
+                ],
+                [
+                    'mood' => 'good',
+                    'note' => 'Feeling steady and connected today.',
+                ]
+            );
+
+            DailyCheckin::query()->updateOrCreate(
+                [
+                    'couple_id' => $couple->id,
+                    'user_id' => $partnerUser->id,
+                    'checkin_date' => Carbon::yesterday(),
+                ],
+                [
+                    'mood' => 'okay',
+                    'note' => 'A little tired but optimistic.',
+                ]
+            );
         }
     }
 }

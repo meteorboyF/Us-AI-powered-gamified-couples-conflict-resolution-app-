@@ -52,4 +52,14 @@ class Couple extends Model
             ->withPivot(['unlocked_at'])
             ->withTimestamps();
     }
+
+    public function missions(): HasMany
+    {
+        return $this->hasMany(CoupleMission::class);
+    }
+
+    public function checkins(): HasMany
+    {
+        return $this->hasMany(DailyCheckin::class);
+    }
 }
