@@ -40,6 +40,8 @@ php artisan reverb:start
 
 - Server channel: `couple.{coupleId}`
 - Echo subscription string: `Echo.private(\`couple.${coupleId}\`)`
+- Authorization source: `routes/channels.php` via `App\Broadcasting\CoupleChannelAuthorizer`
+  - only authenticated couple members can subscribe.
 
 ## Event names
 
@@ -47,9 +49,18 @@ php artisan reverb:start
 - `chat.message.deleted`
 - `chat.read.updated`
 
+## Event payloads (minimal)
+
+- `chat.message.sent`:
+  - `chat_id`, `couple_id`, `message` (`id`, `sender_id`, `type`, `body`, `sent_at`, `attachments[]`)
+- `chat.message.deleted`:
+  - `chat_id`, `couple_id`, `message_id`, `deleted=true`, `body=null`, `deleted_at`
+- `chat.read.updated`:
+  - `chat_id`, `couple_id`, `user_id`, `last_read_message_id`, `last_read_at`
+
 ## Typing indicator
 
-Typing is handled with Echo whisper on the client for MVP:
+Typing is handled with Echo whisper on the client for MVP (no server typing endpoint in this branch):
 
 ```js
 Echo.private(`couple.${coupleId}`).whisper('typing', {
@@ -58,6 +69,8 @@ Echo.private(`couple.${coupleId}`).whisper('typing', {
   expires_at: new Date(Date.now() + 3000).toISOString(),
 });
 ```
+
+Throttle whispers client-side to at most once per second.
 
 ## Manual verification (2 sessions)
 

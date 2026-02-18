@@ -205,18 +205,27 @@ class ChatController extends Controller
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
-        if (! $participant->last_read_message_id || $validated['last_read_message_id'] > $participant->last_read_message_id) {
-            $participant->forceFill([
-                'last_read_message_id' => $validated['last_read_message_id'],
-                'last_read_at' => now(),
-            ])->save();
+        $now = now();
 
+        $advanced = ChatParticipant::query()
+            ->whereKey($participant->id)
+            ->where(function ($query) use ($validated) {
+                $query->whereNull('last_read_message_id')
+                    ->orWhere('last_read_message_id', '<', $validated['last_read_message_id']);
+            })
+            ->update([
+                'last_read_message_id' => $validated['last_read_message_id'],
+                'last_read_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+        if ($advanced > 0) {
             ReadReceiptUpdated::dispatch(
                 (int) $chat->couple_id,
                 (int) $chat->id,
                 (int) $request->user()->id,
                 (int) $validated['last_read_message_id'],
-                now()->toIso8601String(),
+                $now->toIso8601String(),
             );
         }
 
