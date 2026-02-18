@@ -67,4 +67,9 @@ class Couple extends Model
     {
         return $this->hasOne(Chat::class);
     }
+
+    public function vaultItems(): HasMany
+    {
+        return $this->hasMany(VaultItem::class);
+    }
 }
