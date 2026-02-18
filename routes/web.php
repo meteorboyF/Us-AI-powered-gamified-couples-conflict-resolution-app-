@@ -5,6 +5,7 @@ use App\Http\Controllers\CoupleController;
 use App\Http\Controllers\DailyCheckinController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UI\ChatUiController;
 use App\Http\Controllers\WorldController;
 use App\Livewire\Home;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat-v1/messages', [ChatController::class, 'send'])->middleware('throttle:chat-send')->name('chat-v1.send');
     Route::post('/chat-v1/read', [ChatController::class, 'markRead'])->name('chat-v1.read');
     Route::delete('/chat-v1/messages/{message}', [ChatController::class, 'delete'])->name('chat-v1.delete');
+    Route::get('/chat', [ChatUiController::class, 'page'])->name('chat.page');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
