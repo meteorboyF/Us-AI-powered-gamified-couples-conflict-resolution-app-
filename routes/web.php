@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CoupleController;
 use App\Http\Controllers\DailyCheckinController;
 use App\Http\Controllers\MissionController;
@@ -26,6 +27,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/missions/complete', [MissionController::class, 'complete'])->name('missions.complete');
     Route::get('/checkins/today', [DailyCheckinController::class, 'today'])->name('checkins.today');
     Route::post('/checkins', [DailyCheckinController::class, 'store'])->name('checkins.store');
+    Route::get('/chat-v1', [ChatController::class, 'thread'])->name('chat-v1.thread');
+    Route::get('/chat-v1/messages', [ChatController::class, 'messages'])->name('chat-v1.messages');
+    Route::post('/chat-v1/messages', [ChatController::class, 'send'])->middleware('throttle:chat-send')->name('chat-v1.send');
+    Route::post('/chat-v1/read', [ChatController::class, 'markRead'])->name('chat-v1.read');
+    Route::delete('/chat-v1/messages/{message}', [ChatController::class, 'delete'])->name('chat-v1.delete');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
