@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Chat\ChatThreadResolver;
+use App\Events\Chat\MessageDeleted;
+use App\Events\Chat\MessageSent;
+use App\Events\Chat\ReadReceiptUpdated;
 use App\Models\ChatMessage;
 use App\Models\ChatParticipant;
 use Illuminate\Http\JsonResponse;
@@ -170,6 +173,8 @@ class ChatController extends Controller
 
         $chat->forceFill(['last_message_id' => $message->id])->save();
 
+        MessageSent::dispatch($message);
+
         return response()->json([
             'message' => $this->serializeMessage($message->load(['attachments', 'sender:id,name'])),
         ], 201);
@@ -205,6 +210,14 @@ class ChatController extends Controller
                 'last_read_message_id' => $validated['last_read_message_id'],
                 'last_read_at' => now(),
             ])->save();
+
+            ReadReceiptUpdated::dispatch(
+                (int) $chat->couple_id,
+                (int) $chat->id,
+                (int) $request->user()->id,
+                (int) $validated['last_read_message_id'],
+                now()->toIso8601String(),
+            );
         }
 
         return response()->json(['ok' => true]);
@@ -233,6 +246,8 @@ class ChatController extends Controller
                     ->value('id'),
             ])->save();
         }
+
+        MessageDeleted::dispatch((int) $chat->couple_id, $message);
 
         return response()->json([], 204);
     }
