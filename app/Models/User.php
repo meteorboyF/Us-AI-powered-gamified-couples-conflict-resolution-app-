@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -58,5 +59,10 @@ class User extends Authenticatable
     public function currentCouple(): BelongsTo
     {
         return $this->belongsTo(Couple::class, 'current_couple_id');
+    }
+
+    public function vaultItems(): HasMany
+    {
+        return $this->hasMany(VaultItem::class, 'created_by_user_id');
     }
 }

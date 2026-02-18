@@ -13,6 +13,7 @@ use App\Models\CoupleWorldState;
 use App\Models\DailyCheckin;
 use App\Models\MissionTemplate;
 use App\Models\User;
+use App\Models\VaultItem;
 use App\Models\WorldItem;
 use Carbon\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -195,6 +196,51 @@ class DatabaseSeeder extends Seeder
                     ]
                 );
             }
+
+            VaultItem::query()->updateOrCreate(
+                [
+                    'couple_id' => $couple->id,
+                    'title' => 'Shared Gratitude Note',
+                ],
+                [
+                    'created_by_user_id' => $demoUser->id,
+                    'type' => 'note',
+                    'body' => 'Thank you for the support this week.',
+                    'is_sensitive' => false,
+                    'is_locked' => false,
+                    'meta' => ['consent_required' => false],
+                ]
+            );
+
+            VaultItem::query()->updateOrCreate(
+                [
+                    'couple_id' => $couple->id,
+                    'title' => 'Why I Appreciate You',
+                ],
+                [
+                    'created_by_user_id' => $partnerUser->id,
+                    'type' => 'reason',
+                    'body' => 'You always listen before reacting.',
+                    'is_sensitive' => false,
+                    'is_locked' => false,
+                    'meta' => ['consent_required' => false],
+                ]
+            );
+
+            VaultItem::query()->updateOrCreate(
+                [
+                    'couple_id' => $couple->id,
+                    'title' => 'Sensitive Memory',
+                ],
+                [
+                    'created_by_user_id' => $demoUser->id,
+                    'type' => 'timeline',
+                    'body' => 'Private memory details stay protected.',
+                    'is_sensitive' => true,
+                    'is_locked' => true,
+                    'meta' => ['consent_required' => true],
+                ]
+            );
         }
     }
 }
