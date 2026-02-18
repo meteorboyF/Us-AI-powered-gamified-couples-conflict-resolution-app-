@@ -7,6 +7,7 @@ use App\Models\DailyCheckin;
 use App\Support\CoupleContext;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class DailyCheckinController extends Controller
@@ -51,7 +52,7 @@ class DailyCheckinController extends Controller
         ]);
     }
 
-    public function store(Request $request, CoupleContext $context): JsonResponse
+    public function store(Request $request, CoupleContext $context): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'mood' => ['required', 'string', 'in:great,good,okay,low,bad'],
@@ -85,11 +86,15 @@ class DailyCheckinController extends Controller
             ]);
         }
 
-        return response()->json([
-            'mood' => $checkin->mood,
-            'note' => $checkin->note,
-            'saved' => true,
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'mood' => $checkin->mood,
+                'note' => $checkin->note,
+                'saved' => true,
+            ]);
+        }
+
+        return redirect()->route('missions.ui')->with('status', 'Daily check-in saved.');
     }
 
     private function resolveCouple(Request $request, CoupleContext $context): Couple

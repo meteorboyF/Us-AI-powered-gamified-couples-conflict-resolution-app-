@@ -9,6 +9,7 @@ use App\Models\MissionTemplate;
 use App\Support\CoupleContext;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class MissionController extends Controller
@@ -81,7 +82,7 @@ class MissionController extends Controller
         ]);
     }
 
-    public function complete(Request $request, CoupleContext $context): JsonResponse
+    public function complete(Request $request, CoupleContext $context): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'couple_mission_id' => ['required', 'integer', 'exists:couple_missions,id'],
@@ -117,11 +118,15 @@ class MissionController extends Controller
             ]);
         }
 
-        return response()->json([
-            'mission_id' => $mission->id,
-            'completed_on' => $today,
-            'completed' => true,
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'mission_id' => $mission->id,
+                'completed_on' => $today,
+                'completed' => true,
+            ]);
+        }
+
+        return redirect()->route('missions.ui')->with('status', 'Mission marked as completed for today.');
     }
 
     private function resolveCouple(Request $request, CoupleContext $context): Couple

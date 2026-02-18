@@ -4,6 +4,7 @@ use App\Http\Controllers\CoupleController;
 use App\Http\Controllers\DailyCheckinController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UI\MissionsUiController;
 use App\Http\Controllers\WorldController;
 use App\Livewire\Home;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/missions', [MissionController::class, 'index'])->name('missions.index');
     Route::post('/missions/assign', [MissionController::class, 'assign'])->name('missions.assign');
     Route::post('/missions/complete', [MissionController::class, 'complete'])->name('missions.complete');
+    Route::get('/missions-ui', [MissionsUiController::class, 'page'])->name('missions.ui');
     Route::get('/checkins/today', [DailyCheckinController::class, 'today'])->name('checkins.today');
     Route::post('/checkins', [DailyCheckinController::class, 'store'])->name('checkins.store');
 
