@@ -10,6 +10,8 @@ use App\Models\CoupleMission;
 use App\Models\CoupleWorldItem;
 use App\Models\CoupleWorldState;
 use App\Models\DailyCheckin;
+use App\Models\VaultItem;
+use App\Models\VaultUnlockRequest;
 use App\Policies\ChatMessagePolicy;
 use App\Policies\ChatPolicy;
 use App\Policies\CoupleMemberPolicy;
@@ -18,6 +20,8 @@ use App\Policies\CouplePolicy;
 use App\Policies\CoupleWorldItemPolicy;
 use App\Policies\CoupleWorldStatePolicy;
 use App\Policies\DailyCheckinPolicy;
+use App\Policies\VaultItemPolicy;
+use App\Policies\VaultUnlockRequestPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -47,6 +51,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(CoupleWorldState::class, CoupleWorldStatePolicy::class);
         Gate::policy(CoupleWorldItem::class, CoupleWorldItemPolicy::class);
         Gate::policy(DailyCheckin::class, DailyCheckinPolicy::class);
+        Gate::policy(VaultItem::class, VaultItemPolicy::class);
+        Gate::policy(VaultUnlockRequest::class, VaultUnlockRequestPolicy::class);
 
         RateLimiter::for('chat-send', function (Request $request) {
             $userKey = $request->user()?->id ? 'user-'.$request->user()->id : 'ip-'.$request->ip();
