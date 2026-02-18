@@ -62,4 +62,9 @@ class Couple extends Model
     {
         return $this->hasMany(DailyCheckin::class);
     }
+
+    public function chat(): HasOne
+    {
+        return $this->hasOne(Chat::class);
+    }
 }
