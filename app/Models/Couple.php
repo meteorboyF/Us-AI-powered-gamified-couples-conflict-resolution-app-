@@ -72,4 +72,9 @@ class Couple extends Model
     {
         return $this->hasMany(VaultItem::class);
     }
+
+    public function aiSessions(): HasMany
+    {
+        return $this->hasMany(AiSession::class);
+    }
 }
