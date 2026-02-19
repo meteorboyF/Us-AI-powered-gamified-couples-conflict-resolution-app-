@@ -27,6 +27,7 @@ Route::get('/dashboard', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/app', [AppHubController::class, 'page'])->name('app.home');
+    Route::get('/couple', [CoupleController::class, 'manage'])->name('couples.manage');
     Route::post('/couples', [CoupleController::class, 'store'])->name('couples.store');
     Route::post('/couples/join', [CoupleController::class, 'join'])->name('couples.join');
     Route::post('/couples/switch', [CoupleController::class, 'switch'])->name('couples.switch');
