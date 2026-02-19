@@ -20,7 +20,7 @@ class DashboardUiTest extends TestCase
         $this->actingAs($user)
             ->get('/dashboard-ui')
             ->assertOk()
-            ->assertSee('Tap to plant Love Seeds');
+            ->assertSee('Home Base');
     }
 
     public function test_authenticated_user_without_current_couple_sees_no_couple_selected_message(): void

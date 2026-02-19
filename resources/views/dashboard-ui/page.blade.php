@@ -12,53 +12,38 @@
     <main class="h-full w-full overflow-y-auto scroll-smooth pt-20">
         <div class="fixed inset-0 bg-gradient-to-b from-slate-900 to-slate-800 z-0"></div>
 
-        <div class="relative z-10 flex flex-col items-center">
-            <div class="h-[35vh]"></div>
-
-            <div class="w-full bg-emerald-800 border-t-4 border-emerald-700 min-h-[55vh] pb-64 shadow-[0_-20px_50px_rgba(0,0,0,0.3)]">
-                <div class="grid grid-cols-4 max-w-4xl mx-auto gap-8 px-8 pt-16">
-                    <div class="relative h-32 flex flex-col items-center justify-end">
-                        <div class="text-7xl drop-shadow-2xl animate-bounce">??</div>
-                        <div class="w-16 h-4 bg-black/20 rounded-full blur-sm -mt-2"></div>
-                    </div>
-
-                    @for ($i = 0; $i < 3; $i++)
-                        <button type="button" @click="showBuildMenu = true"
-                            class="w-24 h-24 border-2 border-dashed border-white/25 rounded-xl mt-8 flex items-center justify-center text-white/60 text-4xl hover:bg-white/10 hover:border-white/40 transition-all">
-                            +
-                        </button>
-                    @endfor
+        @if ($statusCode === 409 || ! $world)
+            <div class="relative z-10 pt-24 px-8 max-w-4xl mx-auto">
+                <div class="bg-amber-50 text-amber-900 border border-amber-200 rounded p-4">
+                    <p class="font-semibold">No couple selected.</p>
+                    <p class="text-sm mt-1">{{ $statusMessage ?: 'Select or create a couple to view your world scene.' }}</p>
+                    <a href="/couple" class="underline">Go to Couple Linking</a>
                 </div>
-
-                <div class="mt-12 text-center">
-                    <div class="inline-block bg-amber-100/95 border-2 border-amber-300 px-6 py-3 rounded shadow-lg">
-                        <p class="font-semibold text-amber-900">Tap to plant Love Seeds</p>
-                    </div>
-                </div>
-
-                @if (! $currentCoupleId)
-                    <div class="mt-8 max-w-3xl mx-auto px-8">
-                        <div class="bg-amber-50 text-amber-900 border border-amber-200 rounded p-4">
-                            <p class="font-semibold">No couple selected.</p>
-                            <a href="/couple" class="underline">Go to Couple Linking</a>
-                        </div>
-                    </div>
-                @endif
             </div>
-        </div>
+        @elseif ($statusCode === 403)
+            <div class="relative z-10 pt-24 px-8 max-w-4xl mx-auto">
+                <div class="bg-red-50 text-red-700 border border-red-200 rounded p-4">
+                    <p class="font-semibold">Not authorized for current couple.</p>
+                    <p class="text-sm mt-1">{{ $statusMessage ?: 'Please switch to an accessible couple.' }}</p>
+                    <a href="/couple" class="underline">Go to Couple Linking</a>
+                </div>
+            </div>
+        @else
+            @include('world.scene', ['world' => $world])
+        @endif
     </main>
 
     <nav class="fixed bottom-6 left-0 right-0 z-50 px-4">
         <div class="max-w-3xl mx-auto bg-amber-100 border-2 border-amber-300 flex justify-around p-2 shadow">
             @php
                 $navItems = [
-                    ['i' => '???', 'l' => 'Build', 'u' => '#', 'click' => 'showBuildMenu = true'],
-                    ['i' => '??', 'l' => 'World', 'u' => '/world-ui'],
-                    ['i' => '??', 'l' => 'Missions', 'u' => '/missions-ui'],
-                    ['i' => '??', 'l' => 'Chat', 'u' => '/chat'],
-                    ['i' => '??', 'l' => 'Vault', 'u' => '/vault-ui'],
-                    ['i' => '??', 'l' => 'Coach', 'u' => '/ai-coach'],
-                    ['i' => '??', 'l' => 'Gifts', 'u' => '/gifts-ui'],
+                    ['l' => 'Build', 'u' => '#', 'click' => 'showBuildMenu = true'],
+                    ['l' => 'World', 'u' => '/world-ui'],
+                    ['l' => 'Missions', 'u' => '/missions-ui'],
+                    ['l' => 'Chat', 'u' => '/chat'],
+                    ['l' => 'Vault', 'u' => '/vault-ui'],
+                    ['l' => 'Coach', 'u' => '/ai-coach'],
+                    ['l' => 'Gifts', 'u' => '/gifts-ui'],
                 ];
             @endphp
             @foreach ($navItems as $item)
@@ -70,7 +55,6 @@
                     @endif
                     class="flex flex-col items-center p-2 hover:bg-amber-200 rounded transition-colors cursor-pointer"
                 >
-                    <span class="text-xl">{{ $item['i'] }}</span>
                     <span class="text-[11px] uppercase tracking-wide text-amber-900">{{ $item['l'] }}</span>
                 </a>
             @endforeach
@@ -78,5 +62,55 @@
     </nav>
 
     <x-build-menu />
+
+    @if ($world)
+        <script>
+            const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const vibeForm = document.getElementById('dashboard-vibe-form');
+            const vibeLabel = document.getElementById('dashboard-vibe');
+            const unlockButtons = document.querySelectorAll('.dashboard-unlock-btn');
+
+            vibeForm?.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const vibe = document.getElementById('dashboard-vibe-input').value;
+
+                const response = await fetch('/world/vibe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                    body: JSON.stringify({ vibe }),
+                });
+
+                if (response.ok) {
+                    vibeLabel.textContent = vibe;
+                }
+            });
+
+            unlockButtons.forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const key = button.dataset.key;
+
+                    const response = await fetch('/world/unlock', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Accept: 'application/json',
+                            'X-CSRF-TOKEN': csrf,
+                        },
+                        body: JSON.stringify({ key }),
+                    });
+
+                    if (response.ok) {
+                        button.textContent = 'Unlocked';
+                        button.disabled = true;
+                        button.classList.add('opacity-70');
+                    }
+                });
+            });
+        </script>
+    @endif
 </body>
 </html>
