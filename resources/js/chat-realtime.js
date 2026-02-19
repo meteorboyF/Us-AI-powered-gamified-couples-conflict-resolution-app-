@@ -28,8 +28,9 @@ export function initChatRealtime() {
     const errorsEl = document.getElementById('chat-errors');
     const formEl = document.getElementById('chat-form');
     const inputEl = document.getElementById('chat-input');
+    const sendButtonEl = document.getElementById('chat-send');
 
-    if (!messagesEl || !typingEl || !seenEl || !errorsEl || !formEl || !inputEl) {
+    if (!messagesEl || !typingEl || !seenEl || !errorsEl || !formEl || !inputEl || !sendButtonEl) {
         return;
     }
 
@@ -42,7 +43,18 @@ export function initChatRealtime() {
         typingTimer: null,
         readDebounceTimer: null,
         typingLastSentAt: 0,
+        isSending: false,
     };
+
+    function isNearBottom() {
+        return messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 100;
+    }
+
+    function updateSendState() {
+        const hasText = Boolean(inputEl.value.trim());
+        sendButtonEl.disabled = state.isSending || !hasText;
+        sendButtonEl.textContent = state.isSending ? 'Sending...' : 'Send';
+    }
 
     function showError(message) {
         errorsEl.textContent = message;
@@ -80,13 +92,18 @@ export function initChatRealtime() {
     }
 
     function renderMessages() {
+        const shouldStickToBottom = isNearBottom();
         const sorted = [...state.messages.values()].sort((a, b) => a.id - b.id);
         messagesEl.innerHTML = '';
 
         sorted.forEach((message) => {
             const isOwn = message.sender_id === currentUserId;
             const wrapper = document.createElement('div');
-            wrapper.className = `rounded px-3 py-2 ${isOwn ? 'bg-indigo-50 ml-8' : 'bg-gray-100 mr-8'}`;
+            wrapper.className = `rounded-2xl border px-3 py-2 shadow-sm ${
+                isOwn
+                    ? 'ml-8 border-pink-200 bg-rose-50 text-slate-900'
+                    : 'mr-8 border-amber-200 bg-amber-50 text-slate-900'
+            }`;
             wrapper.dataset.messageId = String(message.id);
 
             const body = message.deleted
@@ -96,9 +113,9 @@ export function initChatRealtime() {
             wrapper.innerHTML = `
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <div class="text-xs text-gray-500">${isOwn ? 'You' : (message.sender_name || 'Partner')}</div>
+                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">${isOwn ? 'You' : (message.sender_name || 'Partner')}</div>
                         <div class="text-sm break-words">${body}</div>
-                        <div class="text-[11px] text-gray-400 mt-1">${formatDate(message.sent_at)}</div>
+                        <div class="text-[11px] text-slate-400 mt-1">${formatDate(message.sent_at)}</div>
                     </div>
                     ${isOwn && !message.deleted ? `<button class="chat-delete text-xs text-red-600 underline" data-delete-id="${message.id}" type="button">Delete</button>` : ''}
                 </div>
@@ -108,7 +125,9 @@ export function initChatRealtime() {
         });
 
         state.latestVisibleId = sorted.length ? sorted[sorted.length - 1].id : null;
-        messagesEl.scrollTop = messagesEl.scrollHeight;
+        if (shouldStickToBottom) {
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
         renderSeen();
     }
 
@@ -285,24 +304,34 @@ export function initChatRealtime() {
 
         const body = inputEl.value.trim();
         if (!body) {
+            updateSendState();
             return;
         }
 
         try {
+            state.isSending = true;
+            updateSendState();
             await sendMessage(body);
             inputEl.value = '';
         } catch (error) {
             showError('Could not send message.');
+        } finally {
+            state.isSending = false;
+            updateSendState();
         }
     });
+
+    inputEl.addEventListener('input', updateSendState);
 
     Promise.all([loadThread(), loadMessages()])
         .then(() => {
             clearError();
             bindDeleteButtons();
             setupRealtime();
+            updateSendState();
         })
         .catch(() => {
             showError('Unable to load chat.');
+            updateSendState();
         });
 }
