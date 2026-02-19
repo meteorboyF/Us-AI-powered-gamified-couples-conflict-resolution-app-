@@ -1,5 +1,6 @@
 import './bootstrap';
 import { initAiCoachRealtime } from './ai-coach-realtime';
+import { initChatRealtime } from './chat-realtime';
 
 import Alpine from 'alpinejs';
 
@@ -14,3 +15,5 @@ if (aiCoachRoot) {
         sessionId: aiCoachRoot.dataset.sessionId,
     });
 }
+
+initChatRealtime();
