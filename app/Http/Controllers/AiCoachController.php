@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Domain\AI\Prompts\PromptBuilder;
 use App\Domain\AI\Safety\SafetyClassifier;
+use App\Events\AiCoach\AiDraftCreated;
+use App\Events\AiCoach\AiMessageCreated;
+use App\Events\AiCoach\AiSessionClosed;
 use App\Models\AiDraft;
 use App\Models\AiMessage;
 use App\Models\AiSession;
@@ -141,6 +144,17 @@ class AiCoachController extends Controller
             'role' => 'user',
             'safety' => [],
         ]);
+        event(new AiMessageCreated(
+            (int) $couple->id,
+            (int) $session->id,
+            [
+                'id' => $userMessage->id,
+                'sender_type' => $userMessage->sender_type,
+                'sender_user_id' => $userMessage->sender_user_id,
+                'content' => $userMessage->content,
+                'created_at' => $userMessage->created_at?->toIso8601String(),
+            ],
+        ));
 
         $classification = $safetyClassifier->classify($validated['content']);
         $flags = $classification['flags'];
@@ -178,6 +192,17 @@ class AiCoachController extends Controller
             'tokens_out' => $tokensOut,
             'safety' => $providerSafety,
         ]);
+        event(new AiMessageCreated(
+            (int) $couple->id,
+            (int) $session->id,
+            [
+                'id' => $assistantMessage->id,
+                'sender_type' => $assistantMessage->sender_type,
+                'sender_user_id' => $assistantMessage->sender_user_id,
+                'content' => $assistantMessage->content,
+                'created_at' => $assistantMessage->created_at?->toIso8601String(),
+            ],
+        ));
 
         $draft = null;
         if (in_array($session->mode, ['bridge', 'repair'], true)) {
@@ -189,6 +214,18 @@ class AiCoachController extends Controller
                 'content' => $assistantText,
                 'status' => 'draft',
             ]);
+            event(new AiDraftCreated(
+                (int) $couple->id,
+                (int) $session->id,
+                [
+                    'id' => $draft->id,
+                    'draft_type' => $draft->draft_type,
+                    'title' => $draft->title,
+                    'content' => $draft->content,
+                    'status' => $draft->status,
+                    'created_at' => $draft->created_at?->toIso8601String(),
+                ],
+            ));
         }
 
         return response()->json([
@@ -212,6 +249,12 @@ class AiCoachController extends Controller
         $this->authorize('update', $session);
 
         $session->forceFill(['status' => 'closed'])->save();
+        event(new AiSessionClosed(
+            (int) $couple->id,
+            (int) $session->id,
+            (string) $session->status,
+            $session->updated_at?->toIso8601String(),
+        ));
 
         return response()->json(['closed' => true]);
     }
