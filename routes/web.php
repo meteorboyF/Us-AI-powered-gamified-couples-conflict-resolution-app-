@@ -8,6 +8,7 @@ use App\Http\Controllers\GiftController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UI\AiCoachUiController;
+use App\Http\Controllers\UI\GiftsUiController;
 use App\Http\Controllers\VaultController;
 use App\Http\Controllers\VaultUnlockController;
 use App\Http\Controllers\WorldController;
@@ -61,6 +62,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/gifts/requests/{giftRequest}', [GiftController::class, 'show'])->name('gifts.requests.show');
     Route::post('/gifts/requests/{giftRequest}/generate', [GiftController::class, 'generate'])->name('gifts.requests.generate');
     Route::post('/gifts/suggestions/{suggestion}/favorite', [GiftController::class, 'toggleFavorite'])->name('gifts.suggestions.favorite');
+    Route::get('/gifts-ui', [GiftsUiController::class, 'page'])->name('gifts.ui');
+    Route::post('/gifts-ui/request', [GiftsUiController::class, 'createRequest'])->name('gifts.ui.request');
+    Route::post('/gifts-ui/{giftRequest}/generate', [GiftsUiController::class, 'generate'])->name('gifts.ui.generate');
+    Route::post('/gifts-ui/suggestions/{suggestion}/favorite', [GiftsUiController::class, 'favorite'])->name('gifts.ui.favorite');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
