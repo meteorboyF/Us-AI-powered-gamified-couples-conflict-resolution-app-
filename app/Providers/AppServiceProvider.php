@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\AiDraft;
+use App\Models\AiSession;
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\Couple;
@@ -12,6 +14,8 @@ use App\Models\CoupleWorldState;
 use App\Models\DailyCheckin;
 use App\Models\VaultItem;
 use App\Models\VaultUnlockRequest;
+use App\Policies\AiDraftPolicy;
+use App\Policies\AiSessionPolicy;
 use App\Policies\ChatMessagePolicy;
 use App\Policies\ChatPolicy;
 use App\Policies\CoupleMemberPolicy;
@@ -22,6 +26,8 @@ use App\Policies\CoupleWorldStatePolicy;
 use App\Policies\DailyCheckinPolicy;
 use App\Policies\VaultItemPolicy;
 use App\Policies\VaultUnlockRequestPolicy;
+use App\Services\AI\AiManager;
+use App\Services\AI\Contracts\AiProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -35,7 +41,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(AiProvider::class, function ($app) {
+            return $app->make(AiManager::class)->provider();
+        });
     }
 
     /**
@@ -43,6 +51,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(AiDraft::class, AiDraftPolicy::class);
+        Gate::policy(AiSession::class, AiSessionPolicy::class);
         Gate::policy(Chat::class, ChatPolicy::class);
         Gate::policy(ChatMessage::class, ChatMessagePolicy::class);
         Gate::policy(Couple::class, CouplePolicy::class);
@@ -59,6 +69,14 @@ class AppServiceProvider extends ServiceProvider
 
             return [
                 Limit::perMinute((int) config('us.chat.rate_limit_per_minute', 20))->by($userKey),
+            ];
+        });
+
+        RateLimiter::for('ai-coach', function (Request $request) {
+            $userKey = $request->user()?->id ? 'user-'.$request->user()->id : 'ip-'.$request->ip();
+
+            return [
+                Limit::perMinute((int) config('us.ai.rate_limit_per_minute', 10))->by($userKey),
             ];
         });
     }

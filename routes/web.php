@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiCoachController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CoupleController;
 use App\Http\Controllers\DailyCheckinController;
@@ -42,6 +43,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/vault/{item}/unlock-request', [VaultUnlockController::class, 'request'])->name('vault.unlock.request');
     Route::post('/vault/unlock/{unlockRequest}/approve', [VaultUnlockController::class, 'approve'])->name('vault.unlock.approve');
     Route::post('/vault/unlock/{unlockRequest}/reject', [VaultUnlockController::class, 'reject'])->name('vault.unlock.reject');
+    Route::get('/ai/sessions', [AiCoachController::class, 'index'])->name('ai.sessions.index');
+    Route::post('/ai/sessions', [AiCoachController::class, 'store'])->name('ai.sessions.store');
+    Route::get('/ai/sessions/{session}', [AiCoachController::class, 'show'])->name('ai.sessions.show');
+    Route::post('/ai/sessions/{session}/user-message', [AiCoachController::class, 'message'])->middleware('throttle:ai-coach')->name('ai.sessions.message');
+    Route::post('/ai/sessions/{session}/close', [AiCoachController::class, 'close'])->name('ai.sessions.close');
+    Route::post('/ai/sessions/{session}/drafts/{draft}/accept', [AiCoachController::class, 'acceptDraft'])->name('ai.sessions.drafts.accept');
+    Route::post('/ai/sessions/{session}/drafts/{draft}/discard', [AiCoachController::class, 'discardDraft'])->name('ai.sessions.drafts.discard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

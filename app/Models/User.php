@@ -65,4 +65,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(VaultItem::class, 'created_by_user_id');
     }
+
+    public function aiSessions(): HasMany
+    {
+        return $this->hasMany(AiSession::class, 'created_by_user_id');
+    }
+
+    public function aiMessages(): HasMany
+    {
+        return $this->hasMany(AiMessage::class, 'sender_user_id');
+    }
+
+    public function aiDrafts(): HasMany
+    {
+        return $this->hasMany(AiDraft::class, 'created_by_user_id');
+    }
 }
