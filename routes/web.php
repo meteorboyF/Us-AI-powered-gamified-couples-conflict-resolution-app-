@@ -9,6 +9,7 @@ use App\Http\Controllers\MissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UI\AiCoachUiController;
 use App\Http\Controllers\UI\GiftsUiController;
+use App\Http\Controllers\UI\MissionsUiController;
 use App\Http\Controllers\VaultController;
 use App\Http\Controllers\VaultUnlockController;
 use App\Http\Controllers\WorldController;
@@ -32,6 +33,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/missions', [MissionController::class, 'index'])->name('missions.index');
     Route::post('/missions/assign', [MissionController::class, 'assign'])->name('missions.assign');
     Route::post('/missions/complete', [MissionController::class, 'complete'])->name('missions.complete');
+    Route::get('/missions-ui', [MissionsUiController::class, 'page'])->name('missions.ui');
+    Route::post('/missions-ui/complete', [MissionsUiController::class, 'complete'])->name('missions.ui.complete');
+    Route::post('/missions-ui/checkin', [MissionsUiController::class, 'checkin'])->name('missions.ui.checkin');
     Route::get('/checkins/today', [DailyCheckinController::class, 'today'])->name('checkins.today');
     Route::post('/checkins', [DailyCheckinController::class, 'store'])->name('checkins.store');
     Route::get('/chat-v1', [ChatController::class, 'thread'])->name('chat-v1.thread');
