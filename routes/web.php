@@ -17,7 +17,6 @@ use App\Http\Controllers\VaultController;
 use App\Http\Controllers\VaultUnlockController;
 use App\Http\Controllers\WorldController;
 use App\Livewire\Home;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', Home::class);
@@ -28,11 +27,6 @@ Route::get('/dashboard', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/app', [AppHubController::class, 'page'])->name('app.home');
-    Route::get('/couple', function (Request $request) {
-        return view('couple.page', [
-            'currentCoupleId' => $request->user()?->current_couple_id,
-        ]);
-    })->name('couple.page');
     Route::post('/couples', [CoupleController::class, 'store'])->name('couples.store');
     Route::post('/couples/join', [CoupleController::class, 'join'])->name('couples.join');
     Route::post('/couples/switch', [CoupleController::class, 'switch'])->name('couples.switch');

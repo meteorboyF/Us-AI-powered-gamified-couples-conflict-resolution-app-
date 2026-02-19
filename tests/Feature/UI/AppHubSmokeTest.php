@@ -33,7 +33,7 @@ class AppHubSmokeTest extends TestCase
         $user = User::factory()->create();
         $this->createCoupleWithPartner($user);
 
-        $paths = ['/couple', '/world-ui', '/missions-ui', '/chat', '/vault-ui', '/ai-coach', '/gifts-ui'];
+        $paths = ['/world-ui', '/missions-ui', '/chat', '/vault-ui', '/ai-coach', '/gifts-ui'];
 
         foreach ($paths as $path) {
             $this->actingAs($user)
