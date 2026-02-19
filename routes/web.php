@@ -63,6 +63,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/gifts/requests/{giftRequest}/generate', [GiftController::class, 'generate'])->name('gifts.requests.generate');
     Route::post('/gifts/suggestions/{suggestion}/favorite', [GiftController::class, 'toggleFavorite'])->name('gifts.suggestions.favorite');
     Route::get('/gifts-ui', [GiftsUiController::class, 'page'])->name('gifts.ui');
+    Route::post('/gifts-ui/request', [GiftsUiController::class, 'createRequest'])->name('gifts.ui.request');
+    Route::post('/gifts-ui/{giftRequest}/generate', [GiftsUiController::class, 'generate'])->name('gifts.ui.generate');
+    Route::post('/gifts-ui/suggestions/{suggestion}/favorite', [GiftsUiController::class, 'favorite'])->name('gifts.ui.favorite');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
