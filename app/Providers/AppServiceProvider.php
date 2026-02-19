@@ -12,6 +12,8 @@ use App\Models\CoupleMission;
 use App\Models\CoupleWorldItem;
 use App\Models\CoupleWorldState;
 use App\Models\DailyCheckin;
+use App\Models\GiftRequest;
+use App\Models\GiftSuggestion;
 use App\Models\VaultItem;
 use App\Models\VaultUnlockRequest;
 use App\Policies\AiDraftPolicy;
@@ -24,6 +26,8 @@ use App\Policies\CouplePolicy;
 use App\Policies\CoupleWorldItemPolicy;
 use App\Policies\CoupleWorldStatePolicy;
 use App\Policies\DailyCheckinPolicy;
+use App\Policies\GiftRequestPolicy;
+use App\Policies\GiftSuggestionPolicy;
 use App\Policies\VaultItemPolicy;
 use App\Policies\VaultUnlockRequestPolicy;
 use App\Services\AI\AiManager;
@@ -61,6 +65,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(CoupleWorldState::class, CoupleWorldStatePolicy::class);
         Gate::policy(CoupleWorldItem::class, CoupleWorldItemPolicy::class);
         Gate::policy(DailyCheckin::class, DailyCheckinPolicy::class);
+        Gate::policy(GiftRequest::class, GiftRequestPolicy::class);
+        Gate::policy(GiftSuggestion::class, GiftSuggestionPolicy::class);
         Gate::policy(VaultItem::class, VaultItemPolicy::class);
         Gate::policy(VaultUnlockRequest::class, VaultUnlockRequestPolicy::class);
 

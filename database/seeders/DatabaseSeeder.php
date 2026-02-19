@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Gifts\Fallback\GiftSuggestionGenerator;
 use App\Models\AiDraft;
 use App\Models\AiMessage;
 use App\Models\AiSession;
@@ -14,6 +15,7 @@ use App\Models\CoupleMember;
 use App\Models\CoupleMission;
 use App\Models\CoupleWorldState;
 use App\Models\DailyCheckin;
+use App\Models\GiftRequest;
 use App\Models\MissionTemplate;
 use App\Models\User;
 use App\Models\VaultItem;
@@ -371,6 +373,28 @@ class DatabaseSeeder extends Seeder
                         'status' => 'draft',
                     ]
                 );
+            }
+
+            $giftRequest = GiftRequest::query()->firstOrCreate(
+                [
+                    'couple_id' => $couple->id,
+                    'occasion' => 'anniversary',
+                ],
+                [
+                    'created_by_user_id' => $demoUser->id,
+                    'budget_min' => 500,
+                    'budget_max' => 2000,
+                    'time_constraint' => 'this week',
+                    'notes' => 'Something thoughtful and simple.',
+                    'meta' => [],
+                ]
+            );
+
+            if (! $giftRequest->suggestions()->exists()) {
+                $generator = app(GiftSuggestionGenerator::class);
+                foreach ($generator->generate($giftRequest) as $suggestion) {
+                    $giftRequest->suggestions()->create($suggestion);
+                }
             }
         }
     }
