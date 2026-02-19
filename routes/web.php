@@ -8,6 +8,7 @@ use App\Http\Controllers\GiftController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UI\AiCoachUiController;
+use App\Http\Controllers\UI\AppHubController;
 use App\Http\Controllers\UI\ChatUiController;
 use App\Http\Controllers\UI\GiftsUiController;
 use App\Http\Controllers\UI\MissionsUiController;
@@ -25,6 +26,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/app', [AppHubController::class, 'page'])->name('app.home');
     Route::post('/couples', [CoupleController::class, 'store'])->name('couples.store');
     Route::post('/couples/join', [CoupleController::class, 'join'])->name('couples.join');
     Route::post('/couples/switch', [CoupleController::class, 'switch'])->name('couples.switch');
