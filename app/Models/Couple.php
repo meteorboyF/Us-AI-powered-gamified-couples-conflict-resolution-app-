@@ -77,4 +77,9 @@ class Couple extends Model
     {
         return $this->hasMany(AiSession::class);
     }
+
+    public function giftRequests(): HasMany
+    {
+        return $this->hasMany(GiftRequest::class);
+    }
 }
