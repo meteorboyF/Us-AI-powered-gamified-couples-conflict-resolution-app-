@@ -8,100 +8,126 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @if (session('status'))
-                <div class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-2 rounded">
+                <div class="mb-4 rounded border border-emerald-200 bg-emerald-50 px-4 py-2 text-emerald-800">
                     {{ session('status') }}
                 </div>
             @endif
 
             @if ($errors->any())
-                <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-2 rounded">
+                <div class="mb-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-red-800">
                     {{ $errors->first() }}
                 </div>
             @endif
 
             @if (! $coupleId)
-                <div class="bg-white shadow-sm sm:rounded-lg p-6">
-                    <p class="text-gray-900 font-semibold">No couple selected</p>
-                    <a href="/couple" class="text-indigo-600 hover:underline mt-2 inline-block">Go to couple setup</a>
+                <div class="rounded-lg border border-amber-300 bg-amber-50 p-6">
+                    <p class="font-semibold text-amber-900">No couple selected</p>
+                    <a href="/couple" class="mt-2 inline-block text-amber-900 underline">Go to couple setup</a>
                 </div>
             @else
-                <div id="ai-coach-root"
+                <div
+                    id="ai-coach-root"
                     data-couple-id="{{ $coupleId }}"
                     data-session-id="{{ $currentSession?->id }}"
-                    class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <section class="lg:col-span-1 bg-white shadow-sm sm:rounded-lg p-4">
-                        <h3 class="font-semibold text-gray-900 mb-3">Sessions</h3>
-                        <div class="mb-4 grid grid-cols-3 gap-2">
-                            @foreach (['vent' => 'Vent', 'bridge' => 'Bridge', 'repair' => 'Repair'] as $mode => $label)
-                                <form method="POST" action="{{ route('ai.coach.session.create') }}">
-                                    @csrf
-                                    <input type="hidden" name="mode" value="{{ $mode }}">
-                                    <button type="submit" class="w-full text-xs px-2 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">
-                                        {{ $label }}
-                                    </button>
-                                </form>
-                            @endforeach
-                        </div>
-                        <div class="space-y-2">
+                    data-accept-url-template="{{ route('ai.coach.draft.accept', ['session' => $currentSession?->id ?: 0, 'draft' => '__DRAFT__']) }}"
+                    data-discard-url-template="{{ route('ai.coach.draft.discard', ['session' => $currentSession?->id ?: 0, 'draft' => '__DRAFT__']) }}"
+                    class="grid grid-cols-1 gap-6 lg:grid-cols-12"
+                >
+                    <aside class="rounded-xl border border-slate-200 bg-slate-50 p-4 lg:col-span-4">
+                        <h3 class="text-lg font-semibold text-slate-900">Coach Room</h3>
+                        <p class="mt-1 text-xs text-slate-600">Create a session and choose where to focus.</p>
+
+                        <form method="POST" action="{{ route('ai.coach.session.create') }}" class="mt-4 space-y-3 rounded-lg border border-slate-200 bg-white p-3">
+                            @csrf
+                            <div>
+                                <label for="mode" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Mode</label>
+                                <select id="mode" name="mode" class="w-full rounded border-slate-300 text-sm">
+                                    <option value="vent">Vent</option>
+                                    <option value="bridge">Bridge</option>
+                                    <option value="repair">Repair</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="title" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-600">Title (optional)</label>
+                                <input id="title" name="title" type="text" class="w-full rounded border-slate-300 text-sm" placeholder="Tonight check-in" />
+                            </div>
+                            <button type="submit" class="w-full rounded bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+                                Create Session
+                            </button>
+                        </form>
+
+                        <div class="mt-4 space-y-2">
                             @forelse ($sessions as $session)
-                                <a href="{{ route('ai.coach.page', ['session' => $session->id]) }}"
-                                    class="block border rounded px-3 py-2 text-sm {{ $currentSession?->id === $session->id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200' }}">
-                                    <div class="font-medium">{{ strtoupper($session->mode) }}</div>
-                                    <div class="text-gray-500">{{ $session->status }}</div>
+                                <a
+                                    href="{{ route('ai.coach.page', ['session' => $session->id]) }}"
+                                    class="block rounded-lg border px-3 py-2 text-sm {{ $currentSession?->id === $session->id ? 'border-sky-400 bg-sky-50' : 'border-slate-200 bg-white' }}"
+                                >
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-semibold uppercase tracking-wide text-slate-800">{{ $session->mode }}</span>
+                                        <span class="text-xs text-slate-500">#{{ $session->id }}</span>
+                                    </div>
+                                    <div class="mt-1 text-xs text-slate-500">{{ $session->status }}</div>
                                 </a>
                             @empty
-                                <p class="text-sm text-gray-500">No sessions yet.</p>
+                                <p class="rounded border border-dashed border-slate-300 p-3 text-sm text-slate-500">No sessions yet.</p>
                             @endforelse
                         </div>
-                    </section>
+                    </aside>
 
-                    <section class="lg:col-span-2 bg-white shadow-sm sm:rounded-lg p-4">
+                    <section class="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-8">
                         @if (! $currentSession)
-                            <p class="text-sm text-gray-500">Select or create a session to start.</p>
+                            <p class="text-sm text-slate-500">Select or create a session to start.</p>
                         @else
-                            <div id="ai-session-closed" class="hidden mb-3 px-3 py-2 rounded border border-yellow-300 bg-yellow-50 text-yellow-800 text-sm">
+                            <div id="ai-session-closed" class="mb-3 hidden rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                                 Session closed
                             </div>
 
-                            <div id="ai-messages-stream" class="space-y-2 border rounded p-3 h-80 overflow-y-auto bg-gray-50">
+                            @if (! empty($currentSession->safety_flags))
+                                <div class="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                                    Safety note: Sensitive context detected. Responses are guidance-only and never auto-sent.
+                                </div>
+                            @endif
+
+                            <div class="mb-2 text-xs text-slate-600">Nothing is sent automatically. You always review before sending.</div>
+
+                            <div id="ai-messages-stream" class="h-80 space-y-3 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
                                 @foreach ($messages as $message)
-                                    <div class="rounded px-3 py-2 text-sm {{ $message->sender_type === 'ai' ? 'bg-blue-50 border border-blue-100' : 'bg-white border border-gray-200' }}">
-                                        <div class="font-semibold text-xs uppercase text-gray-500">{{ $message->sender_type }}</div>
-                                        <div class="text-gray-900 whitespace-pre-wrap">{{ $message->content }}</div>
+                                    <div class="ai-message rounded-lg border px-3 py-2 text-sm {{ $message->sender_type === 'ai' ? 'border-sky-200 bg-sky-50' : 'border-slate-200 bg-white' }}">
+                                        <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $message->sender_type }}</div>
+                                        <div class="whitespace-pre-wrap text-slate-900">{{ $message->content }}</div>
                                     </div>
                                 @endforeach
                             </div>
 
                             <form id="ai-send-form" class="mt-4" method="POST" action="{{ route('ai.coach.send', ['session' => $currentSession->id]) }}">
                                 @csrf
-                                <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Your message</label>
-                                <textarea id="content" name="content" rows="4" required class="w-full border-gray-300 rounded-md shadow-sm"></textarea>
-                                <button type="submit" class="mt-2 px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">
-                                    Send
-                                </button>
+                                <label for="content" class="mb-1 block text-sm font-medium text-slate-700">Your message</label>
+                                <textarea id="content" name="content" rows="4" required class="w-full rounded border-slate-300" placeholder="Share what happened and what outcome you want."></textarea>
+                                <div class="mt-2 flex items-center justify-between">
+                                    <div id="ai-thinking-indicator" class="hidden text-sm text-sky-700">Coach is thinking...</div>
+                                    <button id="ai-send-button" type="submit" class="rounded bg-slate-900 px-4 py-2 text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60">
+                                        Send
+                                    </button>
+                                </div>
                             </form>
 
-                            <div id="ai-thinking-indicator" class="hidden mt-3 text-sm text-indigo-700">
-                                Coach is thinking...
-                            </div>
-
-                            <div id="ai-draft-panel" class="mt-4 border rounded p-3 bg-white">
+                            <div id="ai-draft-panel" class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
                                 @if ($draft)
-                                    <h4 class="font-semibold text-gray-900">Draft</h4>
-                                    <p class="text-xs text-gray-500 uppercase">{{ $draft->draft_type }}</p>
-                                    <p class="mt-2 text-sm whitespace-pre-wrap">{{ $draft->content }}</p>
+                                    <div class="mb-1 text-sm font-semibold text-slate-900">Latest Draft</div>
+                                    <p class="text-xs uppercase tracking-wide text-slate-500">{{ $draft->draft_type }}</p>
+                                    <p class="mt-2 whitespace-pre-wrap text-sm text-slate-800">{{ $draft->content }}</p>
                                     <div class="mt-3 flex gap-2">
                                         <form method="POST" action="{{ route('ai.coach.draft.accept', ['session' => $currentSession->id, 'draft' => $draft->id]) }}">
                                             @csrf
-                                            <button type="submit" class="px-3 py-2 text-sm rounded bg-green-600 text-white hover:bg-green-700">Accept</button>
+                                            <button type="submit" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Accept</button>
                                         </form>
                                         <form method="POST" action="{{ route('ai.coach.draft.discard', ['session' => $currentSession->id, 'draft' => $draft->id]) }}">
                                             @csrf
-                                            <button type="submit" class="px-3 py-2 text-sm rounded bg-gray-700 text-white hover:bg-gray-800">Discard</button>
+                                            <button type="submit" class="rounded bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Discard</button>
                                         </form>
                                     </div>
                                 @else
-                                    <p class="text-sm text-gray-500">No active draft.</p>
+                                    <p class="text-sm text-slate-500">No active draft.</p>
                                 @endif
                             </div>
                         @endif

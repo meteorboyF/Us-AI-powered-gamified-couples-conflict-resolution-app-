@@ -4,45 +4,69 @@ const toInt = (value) => {
     return Number.isNaN(parsed) ? null : parsed;
 };
 
+const isNearBottom = (element) => element.scrollHeight - element.scrollTop - element.clientHeight < 100;
+
 const appendMessage = (message) => {
     const stream = document.getElementById('ai-messages-stream');
     if (!stream) {
         return;
     }
 
+    const shouldStick = isNearBottom(stream);
     const wrapper = document.createElement('div');
-    wrapper.className = `rounded px-3 py-2 text-sm ${message.sender_type === 'ai' ? 'bg-blue-50 border border-blue-100' : 'bg-white border border-gray-200'}`;
+    wrapper.className = `ai-message rounded-lg border px-3 py-2 text-sm ${
+        message.sender_type === 'ai' ? 'border-sky-200 bg-sky-50' : 'border-slate-200 bg-white'
+    }`;
 
     const sender = document.createElement('div');
-    sender.className = 'font-semibold text-xs uppercase text-gray-500';
+    sender.className = 'text-xs font-semibold uppercase tracking-wide text-slate-500';
     sender.textContent = message.sender_type ?? 'unknown';
 
     const content = document.createElement('div');
-    content.className = 'text-gray-900 whitespace-pre-wrap';
+    content.className = 'whitespace-pre-wrap text-slate-900';
     content.textContent = message.content ?? '';
 
     wrapper.appendChild(sender);
     wrapper.appendChild(content);
     stream.appendChild(wrapper);
-    stream.scrollTop = stream.scrollHeight;
+
+    if (shouldStick) {
+        stream.scrollTop = stream.scrollHeight;
+    }
 };
 
-const renderDraft = (draft) => {
+const renderDraft = (draft, sessionId) => {
     const panel = document.getElementById('ai-draft-panel');
-    if (!panel) {
+    const root = document.getElementById('ai-coach-root');
+    if (!panel || !root) {
         return;
     }
 
     if (!draft) {
-        panel.innerHTML = '<p class="text-sm text-gray-500">No active draft.</p>';
+        panel.innerHTML = '<p class="text-sm text-slate-500">No active draft.</p>';
 
         return;
     }
 
+    const acceptTemplate = root.dataset.acceptUrlTemplate || '';
+    const discardTemplate = root.dataset.discardUrlTemplate || '';
+    const acceptUrl = acceptTemplate.replace('__DRAFT__', String(draft.id));
+    const discardUrl = discardTemplate.replace('__DRAFT__', String(draft.id));
+
     panel.innerHTML = `
-        <h4 class="font-semibold text-gray-900">Draft</h4>
-        <p class="text-xs text-gray-500 uppercase">${draft.draft_type ?? ''}</p>
-        <p class="mt-2 text-sm whitespace-pre-wrap">${draft.content ?? ''}</p>
+        <div class="mb-1 text-sm font-semibold text-slate-900">Latest Draft</div>
+        <p class="text-xs uppercase tracking-wide text-slate-500">${draft.draft_type ?? ''}</p>
+        <p class="mt-2 whitespace-pre-wrap text-sm text-slate-800">${draft.content ?? ''}</p>
+        <div class="mt-3 flex gap-2">
+            <form method="POST" action="${acceptUrl}">
+                <input type="hidden" name="_token" value="${csrfToken()}">
+                <button type="submit" class="rounded bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Accept</button>
+            </form>
+            <form method="POST" action="${discardUrl}">
+                <input type="hidden" name="_token" value="${csrfToken()}">
+                <button type="submit" class="rounded bg-slate-700 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">Discard</button>
+            </form>
+        </div>
     `;
 };
 
@@ -56,6 +80,20 @@ const setThinking = (isThinking) => {
     indicator.classList.toggle('hidden', !isThinking);
 };
 
+const setSendState = (isSending) => {
+    const textarea = document.getElementById('content');
+    const button = document.getElementById('ai-send-button');
+    if (!textarea || !button) {
+        return;
+    }
+
+    const hasText = Boolean(textarea.value.trim());
+    button.disabled = isSending || !hasText;
+    button.textContent = isSending ? 'Sending...' : 'Send';
+};
+
+const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
 export function initAiCoachRealtime({ coupleId, sessionId }) {
     const normalizedCoupleId = toInt(coupleId);
     const normalizedSessionId = toInt(sessionId);
@@ -65,9 +103,49 @@ export function initAiCoachRealtime({ coupleId, sessionId }) {
     }
 
     const form = document.getElementById('ai-send-form');
-    if (form) {
-        form.addEventListener('submit', () => {
+    const textarea = document.getElementById('content');
+
+    let isSending = false;
+
+    const updateSendState = () => setSendState(isSending);
+
+    textarea?.addEventListener('input', updateSendState);
+    updateSendState();
+
+    if (form && textarea) {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const content = textarea.value.trim();
+            if (!content || isSending) {
+                updateSendState();
+
+                return;
+            }
+
+            isSending = true;
             setThinking(true);
+            updateSendState();
+
+            try {
+                const response = await fetch(`/ai/sessions/${normalizedSessionId}/user-message`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': csrfToken(),
+                    },
+                    body: JSON.stringify({ content }),
+                    credentials: 'same-origin',
+                });
+
+                if (response.ok) {
+                    textarea.value = '';
+                }
+            } finally {
+                isSending = false;
+                updateSendState();
+            }
         });
     }
 
@@ -87,7 +165,7 @@ export function initAiCoachRealtime({ coupleId, sessionId }) {
                 return;
             }
 
-            renderDraft(event.draft);
+            renderDraft(event.draft, normalizedSessionId);
         })
         .listen('.ai.session.closed', (event) => {
             if (toInt(event?.session_id) !== normalizedSessionId) {
