@@ -10,6 +10,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UI\AiCoachUiController;
 use App\Http\Controllers\UI\AppHubController;
 use App\Http\Controllers\UI\ChatUiController;
+use App\Http\Controllers\UI\DashboardUiController;
 use App\Http\Controllers\UI\GiftsUiController;
 use App\Http\Controllers\UI\MissionsUiController;
 use App\Http\Controllers\UI\VaultUiController;
@@ -27,6 +28,7 @@ Route::get('/dashboard', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/app', [AppHubController::class, 'page'])->name('app.home');
+    Route::get('/dashboard-ui', [DashboardUiController::class, 'page'])->name('dashboard.ui');
     Route::get('/couple', [CoupleController::class, 'manage'])->name('couples.manage');
     Route::post('/couples', [CoupleController::class, 'store'])->name('couples.store');
     Route::post('/couples/join', [CoupleController::class, 'join'])->name('couples.join');
