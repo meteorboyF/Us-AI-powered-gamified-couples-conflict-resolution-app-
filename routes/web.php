@@ -4,6 +4,7 @@ use App\Http\Controllers\AiCoachController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CoupleController;
 use App\Http\Controllers\DailyCheckinController;
+use App\Http\Controllers\GiftController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UI\AiCoachUiController;
@@ -56,6 +57,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/ai-coach/sessions/{session}/send', [AiCoachUiController::class, 'send'])->name('ai.coach.send');
     Route::post('/ai-coach/sessions/{session}/drafts/{draft}/accept', [AiCoachUiController::class, 'accept'])->name('ai.coach.draft.accept');
     Route::post('/ai-coach/sessions/{session}/drafts/{draft}/discard', [AiCoachUiController::class, 'discard'])->name('ai.coach.draft.discard');
+    Route::post('/gifts/requests', [GiftController::class, 'store'])->name('gifts.requests.store');
+    Route::get('/gifts/requests/{giftRequest}', [GiftController::class, 'show'])->name('gifts.requests.show');
+    Route::post('/gifts/requests/{giftRequest}/generate', [GiftController::class, 'generate'])->name('gifts.requests.generate');
+    Route::post('/gifts/suggestions/{suggestion}/favorite', [GiftController::class, 'toggleFavorite'])->name('gifts.suggestions.favorite');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

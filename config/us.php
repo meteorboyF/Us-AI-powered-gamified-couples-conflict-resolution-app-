@@ -5,6 +5,7 @@ return [
         'chat_v1' => env('US_FEATURE_CHAT_V1', true),
         'vault_v1' => env('US_FEATURE_VAULT_V1', true),
         'ai_coach_v1' => env('US_FEATURE_AI_COACH_V1', true),
+        'gifts_v1' => env('US_FEATURE_GIFTS_V1', true),
     ],
 
     'chat' => [
@@ -30,5 +31,9 @@ return [
                 'model' => env('OLLAMA_MODEL', 'llama3.1:8b'),
             ],
         ],
+    ],
+
+    'gifts' => [
+        'default_suggestions_count' => (int) env('US_GIFTS_DEFAULT_SUGGESTIONS_COUNT', 8),
     ],
 ];

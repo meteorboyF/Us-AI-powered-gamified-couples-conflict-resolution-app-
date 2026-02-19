@@ -35,7 +35,7 @@ class GiftSuggestion extends Model
         ];
     }
 
-    public function request(): BelongsTo
+    public function giftRequest(): BelongsTo
     {
         return $this->belongsTo(GiftRequest::class, 'gift_request_id');
     }
