@@ -6,6 +6,7 @@ use App\Http\Controllers\CoupleController;
 use App\Http\Controllers\DailyCheckinController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UI\AiCoachUiController;
 use App\Http\Controllers\VaultController;
 use App\Http\Controllers\VaultUnlockController;
 use App\Http\Controllers\WorldController;
@@ -50,6 +51,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/ai/sessions/{session}/close', [AiCoachController::class, 'close'])->name('ai.sessions.close');
     Route::post('/ai/sessions/{session}/drafts/{draft}/accept', [AiCoachController::class, 'acceptDraft'])->name('ai.sessions.drafts.accept');
     Route::post('/ai/sessions/{session}/drafts/{draft}/discard', [AiCoachController::class, 'discardDraft'])->name('ai.sessions.drafts.discard');
+    Route::get('/ai-coach', [AiCoachUiController::class, 'page'])->name('ai.coach.page');
+    Route::post('/ai-coach/sessions', [AiCoachUiController::class, 'createSession'])->name('ai.coach.session.create');
+    Route::post('/ai-coach/sessions/{session}/send', [AiCoachUiController::class, 'send'])->name('ai.coach.send');
+    Route::post('/ai-coach/sessions/{session}/drafts/{draft}/accept', [AiCoachUiController::class, 'accept'])->name('ai.coach.draft.accept');
+    Route::post('/ai-coach/sessions/{session}/drafts/{draft}/discard', [AiCoachUiController::class, 'discard'])->name('ai.coach.draft.discard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
